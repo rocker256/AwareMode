@@ -3,6 +3,7 @@
    All data lives in this browser's localStorage under LS_KEY. Export a backup from Settings. */
 
 const LS_KEY = 'attackmode.data.v1';
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const $ = s => document.querySelector(s);
 const uid = () => Date.now().toString(36).slice(-5) + Math.random().toString(36).slice(2, 7);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -242,14 +243,14 @@ mq.addEventListener?.('change', applyTheme);
 /* ---------- UI primitives ---------- */
 let toastTimer;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600); }
-function modal(html, buttons) {
+function modal(html, buttons, getVal) {
   return new Promise(res => {
     const m = $('#modal');
     m.innerHTML = `<div class="mbox" role="dialog" aria-modal="true">${html}<div class="mbtns">${buttons.map((b, i) => `<button class="btn ${b.cls || ''}" data-mi="${i}">${esc(b.label)}</button>`).join('')}</div></div>`;
     m.hidden = false;
     m.onclick = e => {
       const b = e.target.closest('[data-mi]');
-      if (b) { m.hidden = true; m.innerHTML = ''; res(buttons[+b.dataset.mi].value); }
+      if (b) { const bv = buttons[+b.dataset.mi].value; const out = getVal && bv === 'go' ? getVal() : bv; m.hidden = true; m.innerHTML = ''; res(out); }
       else if (e.target === m) { m.hidden = true; m.innerHTML = ''; res(null); }
     };
   });
@@ -383,7 +384,7 @@ V.attack = () => {
       <div class="seg" role="group" aria-label="Day type">
         ${['normal', 'grace', 'rest'].map(s => `<button class="${status === s ? 'on' : ''}" data-act="setStatus" data-k="${k}" data-v="${s}">${s === 'normal' ? 'Attack day' : s === 'grace' ? 'Grace day' : 'Rest day'}</button>`).join('')}
       </div>
-      <button class="btn sm no-print" data-act="print">Print sheet</button>
+      ${NATIVE ? '' : '<button class="btn sm no-print" data-act="print">Print sheet</button>'}
     </div>
     <div class="stats">
       <div class="stat"><div class="v">${done}/${ts.length}</div><div class="k">Done</div></div>
@@ -483,9 +484,21 @@ V.plan = () => {
 
 /* ---------- focus timer (30/10) ---------- */
 const T = { mode: 'work', running: false, endAt: 0, left: null, total: null, cycle: 1, taskKey: null, taskId: null, ask: false, reframe: null };
-function tSet(mode, min) { T.mode = mode; T.left = T.total = Math.max(1, Math.round(min * 60)); T.running = false; T.ask = false; }
-function tStart() { if (T.running) return; if (T.left == null) tSet('work', S.settings.timer.work); T.endAt = Date.now() + T.left * 1000; T.running = true; unlockAudio(); }
-function tPause() { if (!T.running) return; T.left = Math.max(0, Math.ceil((T.endAt - Date.now()) / 1000)); T.running = false; }
+function tSet(mode, min) { T.mode = mode; T.left = T.total = Math.max(1, Math.round(min * 60)); T.running = false; T.ask = false; nativeSchedule(); }
+// Android app: schedule a system notification for the block end, so it fires even with the screen off
+let lnAsked = false;
+function nativeSchedule() {
+  const LN = NATIVE && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) return;
+  LN.cancel({ notifications: [{ id: 1 }] }).catch(() => { });
+  if (!T.running) return;
+  const go = () => LN.schedule({ notifications: [{ id: 1, title: T.mode === 'break' ? 'Break over' : T.mode === 'starter' ? 'Starter done' : 'Work block done', body: T.mode === 'break' ? 'Back to work.' : T.mode === 'starter' ? 'Am I willing to continue?' : S.settings.timer.breakMsg, schedule: { at: new Date(T.endAt), allowWhileIdle: true } }] }).catch(() => { });
+  if (lnAsked) return go();
+  lnAsked = true;
+  LN.requestPermissions().then(go, go);
+}
+function tStart() { if (T.running) return; if (T.left == null) tSet('work', S.settings.timer.work); T.endAt = Date.now() + T.left * 1000; T.running = true; unlockAudio(); nativeSchedule(); }
+function tPause() { if (!T.running) return; T.left = Math.max(0, Math.ceil((T.endAt - Date.now()) / 1000)); T.running = false; nativeSchedule(); }
 function tFinish() {
   T.running = false; T.left = 0;
   const tm = S.settings.timer;
@@ -792,7 +805,7 @@ V.settings = () => {
       ${field('Grade 0 starter min', 'set|timer.starterG0', tm.starterG0, 'type="number" min="1"')}${field('Grade 1 starter min', 'set|timer.starterG1', tm.starterG1, 'type="number" min="1"')}</div>
       ${field('Message during work', 'set|timer.workMsg', tm.workMsg)}${field('Message during break', 'set|timer.breakMsg', tm.breakMsg)}
       <div class="stack" style="margin-top:10px">${check('Auto-start the next block', 'set|timer.autoStart', tm.autoStart)}${check('Sound + vibration', 'set|timer.sound', tm.sound)}
-      <label class="row small"><input type="checkbox" data-act-change="toggleNotify" ${tm.notify ? 'checked' : ''}> Notifications when a block ends</label></div>`);
+      ${NATIVE ? '' : `<label class="row small"><input type="checkbox" data-act-change="toggleNotify" ${tm.notify ? 'checked' : ''}> Notifications when a block ends</label>`}</div>`);
   h += sec('s-factors', 'Factors to track', `<p class="small muted" style="margin-top:0">Sleep, diet, activity, meal size, exhaustion, noise, or anything else you suspect affects you.</p>` +
     st.factors.map(f => `<div class="fdef">${inp(`fdef|${f.id}|name`, f.name, 'aria-label="Factor name"')}
       <select data-bind="fdef|${f.id}|type" data-rr aria-label="Type">${[['scale', 'Scale'], ['number', 'Number'], ['yesno', 'Yes / No'], ['text', 'Text']].map(([v, l]) => `<option value="${v}" ${f.type === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
@@ -808,10 +821,10 @@ V.settings = () => {
   h += sec('s-tabs', 'Navigation', st.tabs.map((t, i) => `<div class="le-row">${t.id === 'settings' ? '<span style="width:18px"></span>' : `<input type="checkbox" data-bind="tab|${t.id}|visible" data-rr ${t.visible ? 'checked' : ''} aria-label="Show ${esc(t.label)}">`}
       ${inp(`tab|${t.id}|label`, t.label)}<button class="icon-btn" data-act="tabMove" data-i="${i}" data-dir="-1">↑</button><button class="icon-btn" data-act="tabMove" data-i="${i}" data-dir="1">↓</button></div>`).join(''));
   h += sec('s-data', 'Data & backup', `<p class="small muted" style="margin-top:0">Your data is stored only in this browser on this device. Export a backup regularly, and use it to move data between phone and laptop.</p>
-      <div class="row"><button class="btn primary" data-act="export">Export backup (.json)</button><button class="btn" data-act="import">Import backup</button><button class="btn" data-act="csv">Export tasks (.csv)</button></div>
+      <div class="row"><button class="btn primary" data-act="export">Export backup (.json)</button><button class="btn" data-act="import">Import backup file</button><button class="btn" data-act="pasteBackup">Paste backup</button>${NATIVE ? '' : '<button class="btn" data-act="csv">Export tasks (.csv)</button>'}</div>
       <div class="row" style="margin-top:12px"><button class="btn sm" data-act="resetSettings">Reset settings to defaults</button><button class="btn sm danger" data-act="wipe">Erase all data</button></div>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
-      <p class="small muted">Install: on iPhone open the share menu → Add to Home Screen. On Android/Chrome/Edge use the Install option in the browser menu.</p>`);
+      ${NATIVE ? '' : '<p class="small muted">Install: on iPhone open the share menu → Add to Home Screen. On Android/Chrome/Edge use the Install option in the browser menu.</p>'}`);
   return h;
 };
 
@@ -887,6 +900,10 @@ const CHANGE = {
 };
 
 function moveIn(arr, i, dir) { const j = i + dir; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; }
+function copyText(t) {
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('Copied'); } catch (e) { toast('Copy failed. Select the text and copy it.'); } ta.remove(); };
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(t).then(() => toast('Copied'), fallback); else fallback();
+}
 function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
 
 const ACT = {
@@ -951,7 +968,7 @@ const ACT = {
   tContinue() { tSet('work', S.settings.timer.work); tStart(); render(); },
   tStop() { T.ask = false; tSet('work', S.settings.timer.work); render(); toast('Starting is a win. Come back later.'); },
   reframe() { const n = S.settings.reframePrompts.length; if (!n) return toast('Add reframing prompts in Settings'); let i; do { i = Math.floor(Math.random() * n); } while (n > 1 && i === T.reframe); T.reframe = i; render(); },
-  copyAi() { const t = $('#aiprompt')?.textContent || ''; navigator.clipboard?.writeText(t).then(() => toast('Copied'), () => toast('Copy failed')); },
+  copyAi() { copyText($('#aiprompt')?.textContent || ''); },
   addWoop() { S.woops.push({ id: uid(), wish: '', outcome: '', obstacle: '', plan: '', active: true, created: todayKey() }); save(); render(); document.querySelector('.woop input')?.focus(); },
   delWoop: async el => { if (!(await confirmBox('Delete this WOOP?', 'Delete', 'danger'))) return; S.woops = S.woops.filter(w => w.id !== el.dataset.id); save(); render(); },
   async visualize(el) {
@@ -977,7 +994,21 @@ const ACT = {
   fDel(el) { S.settings.factors = S.settings.factors.filter(f => f.id !== el.dataset.id); save(); render(); },
   fMove(el) { const a = S.settings.factors; moveIn(a, a.findIndex(f => f.id === el.dataset.id), +el.dataset.dir); save(); render(); },
   tabMove(el) { moveIn(S.settings.tabs, +el.dataset.i, +el.dataset.dir); save(); render(); },
-  export() { download(`attack-mode-backup-${todayKey()}.json`, JSON.stringify(S, null, 2), 'application/json'); },
+  async export() {
+    const json = JSON.stringify(S);
+    if (!NATIVE) return download(`attack-mode-backup-${todayKey()}.json`, JSON.stringify(S, null, 2), 'application/json');
+    const ok = await modal(`<h2>Backup</h2><p class="small muted">Copy this text and keep it somewhere safe (notes app, email to yourself). Paste it back with "Paste backup".</p><textarea id="bk" readonly style="min-height:160px;font-family:ui-monospace,monospace;font-size:.75rem">${esc(json)}</textarea>`, [{ label: 'Close', value: false, cls: 'ghost' }, { label: 'Copy backup', value: true, cls: 'primary' }]);
+    if (ok) copyText(json);
+  },
+  async pasteBackup() {
+    const txt = await modal(`<h2>Paste backup</h2><p class="small muted">Paste the backup text you copied earlier. This replaces all current data.</p><textarea id="pbk" style="min-height:160px;font-family:ui-monospace,monospace;font-size:.75rem"></textarea>`, [{ label: 'Cancel', value: null, cls: 'ghost' }, { label: 'Replace my data', value: 'go', cls: 'primary' }], () => $('#pbk')?.value);
+    if (!txt) return;
+    try {
+      const data = JSON.parse(txt);
+      if (!data || !data.days || !data.settings) throw new Error('Not an Attack Mode backup');
+      S = migrate(data); save(); applyTheme(); render(); toast('Backup restored');
+    } catch (e) { toast('Restore failed: ' + e.message); }
+  },
   import() { const f = $('#importFile'); f.value = ''; f.onchange = async () => {
     const file = f.files[0]; if (!file) return;
     try {
@@ -1008,5 +1039,5 @@ go(location.hash.slice(1) || S.ui.view || 'attack');
 // re-render when the day rolls over or the app comes back into view
 let lastDay = todayKey();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && todayKey() !== lastDay) { lastDay = todayKey(); if (S.ui.view !== 'focus') render(); } });
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
+if (!NATIVE && 'serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
 if (navigator.storage?.persist) navigator.storage.persist().catch(() => { });
