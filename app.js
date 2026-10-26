@@ -38,7 +38,7 @@ const TABS = [
 
 function defaultSettings() {
   return {
-    appName: 'Attack Mode', myWhy: '', theme: 'auto', accent: '#e4572e', fontScale: 100, weekStart: 1,
+    appName: 'Attack Mode', myWhy: '', style: 'pixel', theme: 'auto', accent: '#e4572e', fontScale: 100, weekStart: 1,
     targetDifficulty: 7, hardTasksTarget: 2, maxTasks: 6, easyMax: 4, tolerance: 1, overloadStep: 20, lookback: 3,
     winThreshold: 60, planReminderHour: 18, showPrinciple: true, showFactorsOnToday: true, showJournalOnToday: true, showRulesOnToday: true,
     labels: { what: 'What exactly', howMuch: 'How much', when: 'When', where: 'Where' },
@@ -233,14 +233,21 @@ function regression() {
   return { c7, prev, level, msg, flagged };
 }
 
-/* ---------- theme ---------- */
+/* ---------- theme + style ---------- */
+const STYLES = [
+  { id: 'pixel', name: 'Pixel', note: 'Ink, cream, orange. Pixel headings.', sw: ['#151412', '#f4f1ea', '#e4572e', '#2f8f5b'] },
+  { id: 'refresh', name: 'Refresh', note: 'Clean sans, italic titles, soft cards.', sw: ['#f4f1ea', '#fffdf8', '#e4572e', '#c2362b'] },
+  { id: 'bw', name: 'Pixel B&W', note: 'Black and white only, notched pixels.', sw: ['#000000', '#6b6b6b', '#e4e4e4', '#ffffff'] },
+];
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
 function applyTheme() {
   const st = S.settings, root = document.documentElement;
   const dark = st.theme === 'dark' || (st.theme === 'auto' && mq.matches);
   root.dataset.theme = dark ? 'dark' : 'light';
-  root.style.setProperty('--accent', st.accent);
-  root.style.setProperty('--hard', st.accent);
+  root.dataset.style = STYLES.some(x => x.id === st.style) ? st.style : 'pixel';
+  // Pixel B&W is black and white only, so the accent colour applies to the other two styles
+  if (root.dataset.style === 'bw') root.style.removeProperty('--accent'); else root.style.setProperty('--accent', st.accent);
+  if (root.dataset.style === 'pixel') root.style.setProperty('--hard', st.accent); else root.style.removeProperty('--hard');
   root.style.setProperty('--fs', (st.fontScale || 100) + '%');
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = dark ? '#0f0e0d' : '#f4f1ea';
   document.title = st.appName || 'Attack Mode';
@@ -293,7 +300,24 @@ const PX = {
   plus: ['...#...', '...#...', '...#...', '#######', '...#...', '...#...', '...#...'],
   logo: ['....aaaa....', '....aaaa....', '...aaaaaa...', '...aa..aa...', '..aaa..aaa..', '..aa....aa..', '.cccccccaaa.', '.cccccccaaa.', '.aa......aa.', 'aa........aa', 'aa........aa', 'aa........aa'],
 };
+// Line icons used by the Refresh style (24px grid, 1.8 stroke)
+const LINE = {
+  today: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  plan: '<path d="M3 20h18M6.5 16a5.5 5.5 0 0 1 11 0M12 3v7M9 6l3-3 3 3"/>',
+  focus: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/>',
+  woop: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
+  manual: '<path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3zM21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/>',
+  insights: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+  history: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r=".8" fill="currentColor"/><circle cx="3.5" cy="12" r=".8" fill="currentColor"/><circle cx="3.5" cy="18" r=".8" fill="currentColor"/>',
+  settings: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  flame: '<path d="M12 22c3.9 0 7-2.8 7-6.8 0-4.7-4.4-6.6-5-12.2-3 2-5.6 5.7-5.6 9.3-1-.6-1.8-1.8-2-3.3C5 10.6 5 12.3 5 15.2 5 19.2 8.1 22 12 22z"/>',
+  play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor"/>',
+  pause: '<path d="M8 5v14M16 5v14" stroke-width="3"/>',
+  chev: '<path d="M9 6l6 6-6 6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+};
 function px(name, size = 18) {
+  if (S.settings.style === 'refresh' && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
   const rows = PX[name]; if (!rows) return '';
   const h = rows.length, w = rows[0].length, fills = { '#': 'currentColor', a: 'var(--accent)', c: '#f4f1ea' };
   let r = '';
@@ -891,6 +915,8 @@ const check = (label, bind, val) => `<label class="row small"><input type="check
 V.settings = () => {
   const st = S.settings, tm = st.timer;
   let h = `<div class="eyebrow">Everything is yours to change</div><h1 class="title"><u>Settings</u></h1>`;
+  h += sec('s-style', 'Style', `<div class="stylepick">${STYLES.map(s => `<button class="${(st.style || 'pixel') === s.id ? 'on' : ''}" data-act="setStyle" data-v="${s.id}" aria-pressed="${(st.style || 'pixel') === s.id}"><span class="sw">${s.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><span><b>${s.name}</b><br><span>${s.note}</span></span></button>`).join('')}</div>
+    <p class="small muted">Only the look changes. All your data and features stay the same. Light/dark still follows the Theme setting below.${st.style === 'bw' ? ' Pixel B&W ignores the accent colour.' : ''}</p>`);
   h += sec('s-general', 'General', `<div class="grid g2">
       ${field('App name', 'set|appName', st.appName)}
       <label class="f"><span>Theme</span><select data-bind="set|theme" data-rr>${['auto', 'light', 'dark'].map(v => `<option ${st.theme === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
@@ -1114,6 +1140,7 @@ const ACT = {
   delRule: async el => { if (!(await confirmBox('Delete this policy and its history?', 'Delete', 'danger'))) return; S.rules = S.rules.filter(r => r.id !== el.dataset.id); save(); render(); },
   mvRule(el) { moveIn(S.rules, S.rules.findIndex(r => r.id === el.dataset.id), +el.dataset.dir); save(); render(); },
   range(el) { S.ui.range = +el.dataset.v; save(); render(); },
+  setStyle(el) { S.settings.style = el.dataset.v; save(); applyTheme(); render(); toast('Style: ' + STYLES.find(s => s.id === el.dataset.v).name); },
   resetAccent() { S.settings.accent = defaultSettings().accent; applyTheme(); save(); render(); },
   toggleRest(el) { const v = +el.dataset.v, a = S.settings.restDays; const i = a.indexOf(v); if (i >= 0) a.splice(i, 1); else a.push(v); save(); render(); },
   leAdd(el) { getPath(S.settings, el.dataset.path).push(''); save(); render(); const r = document.querySelectorAll(`[data-bind^="list|${el.dataset.path}|"]`); r[r.length - 1]?.focus(); },
