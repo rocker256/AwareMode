@@ -463,3 +463,12 @@ table.data td{padding:8px 6px;border-bottom:var(--px) solid var(--line);vertical
 .stylepick b{font-size:.8rem}
 .stylepick span{font-size:.7rem;color:var(--muted)}
 @media (max-width:460px){.stylepick{grid-template-columns:1fr}.stylepick button{grid-template-columns:90px 1fr;align-items:center}}
+
+/* Aware Mode brain mark */
+#splash{background:#060914}
+#splash .logo-img{width:132px;height:132px;image-rendering:pixelated}
+.brand .mark{width:24px;height:24px;image-rendering:pixelated;flex:0 0 auto}
+[data-style="bw"] #splash .logo-img,[data-style="bw"] .brand .mark{filter:grayscale(1) contrast(1.2)}
+[data-style="refresh"] #splash .logo-img{image-rendering:auto}
+[data-style="bw"] #splash{background:#000}
+[data-style="bw"] #splash .logo-img{mix-blend-mode:lighten}

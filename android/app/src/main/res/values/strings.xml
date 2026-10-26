@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Attack Mode</string>
-    <string name="title_activity_main">Attack Mode</string>
+    <string name="app_name">Aware Mode</string>
+    <string name="title_activity_main">Aware Mode</string>
     <string name="package_name">com.awarecube.attackmode</string>
     <string name="custom_url_scheme">com.awarecube.attackmode</string>
 </resources>

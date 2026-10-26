@@ -1,7 +1,7 @@
 {
   "appId": "com.awarecube.attackmode",
-  "appName": "Attack Mode",
+  "appName": "Aware Mode",
   "webDir": "www",
-  "android": { "backgroundColor": "#f4f1ea" },
+  "android": { "backgroundColor": "#060914" },
   "plugins": { "LocalNotifications": { "iconColor": "#e4572e" } }
 }

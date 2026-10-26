@@ -41,14 +41,15 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
-          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/AttackMode.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/AwareMode.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: AttackMode-apk
-          path: AttackMode.apk
+          name: AwareMode-apk
+          path: AwareMode.apk
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v1.0.${{ github.run_number }}"
-          gh release create "$TAG" AttackMode.apk --title "Attack Mode $TAG" --notes "Android build from ${GITHUB_SHA::7}. Install AttackMode.apk on your phone." --latest
+          cp AwareMode.apk AttackMode.apk
+          gh release create "$TAG" AwareMode.apk AttackMode.apk --title "Aware Mode $TAG" --notes "Android build from ${GITHUB_SHA::7}. Install AwareMode.apk on your phone." --latest
