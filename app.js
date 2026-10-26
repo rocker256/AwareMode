@@ -1,5 +1,5 @@
 'use strict';
-/* Attack Mode: a personal, local-first planner built on the "Analog Attack Mode" course notes.
+/* Aware Mode: a personal, local-first planner built on the "Analog Attack Mode" course notes.
    All data lives in this browser's localStorage under LS_KEY. Export a backup from Settings. */
 
 const LS_KEY = 'attackmode.data.v1';
@@ -38,7 +38,7 @@ const TABS = [
 
 function defaultSettings() {
   return {
-    appName: 'Attack Mode', myWhy: '', style: 'pixel', theme: 'auto', accent: '#e4572e', fontScale: 100, weekStart: 1,
+    appName: 'Aware Mode', myWhy: '', style: 'pixel', theme: 'auto', accent: '#e4572e', fontScale: 100, weekStart: 1,
     targetDifficulty: 7, hardTasksTarget: 2, maxTasks: 6, easyMax: 4, tolerance: 1, overloadStep: 20, lookback: 3,
     winThreshold: 60, planReminderHour: 18, showPrinciple: true, showFactorsOnToday: true, showJournalOnToday: true, showRulesOnToday: true,
     labels: { what: 'What exactly', howMuch: 'How much', when: 'When', where: 'Where' },
@@ -97,6 +97,7 @@ function fresh() {
 function migrate(s) {
   const d = defaultSettings();
   s.settings = Object.assign({}, d, s.settings || {});
+  if (s.settings.appName === 'Attack Mode') s.settings.appName = 'Aware Mode'; // renamed in v1.0.6
   for (const k of ['labels', 'placeholders', 'timer']) s.settings[k] = Object.assign({}, d[k], s.settings[k] || {});
   const tabs = s.settings.tabs || [];
   s.settings.tabs = tabs.filter(t => TABS.some(x => x.id === t.id));
@@ -250,7 +251,7 @@ function applyTheme() {
   if (root.dataset.style === 'pixel') root.style.setProperty('--hard', st.accent); else root.style.removeProperty('--hard');
   root.style.setProperty('--fs', (st.fontScale || 100) + '%');
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = dark ? '#0f0e0d' : '#f4f1ea';
-  document.title = st.appName || 'Attack Mode';
+  document.title = st.appName || 'Aware Mode';
 }
 mq.addEventListener?.('change', applyTheme);
 
@@ -348,9 +349,10 @@ function renderNav() {
   const v = S.ui.view;
   $('#nav').innerHTML = S.settings.tabs.filter(t => t.visible || t.id === 'settings').map(t =>
     `<a href="#${t.id}" class="${v === t.id ? 'on' : ''}" data-nav="${t.id}">${px(t.id === 'attack' ? 'today' : t.id, 18)}<span>${esc(t.label)}</span></a>`).join('');
-  const name = S.settings.appName || 'Attack Mode';
+  const name = S.settings.appName || 'Aware Mode';
   const parts = name.split(' ');
-  $('#brand').innerHTML = parts.length > 1 ? `${esc(parts.slice(0, -1).join(' '))} <b>${esc(parts.at(-1))}</b>` : `<b>${esc(name)}</b>`;
+  const word = parts.length > 1 ? `${esc(parts.slice(0, -1).join(' '))} <b>${esc(parts.at(-1))}</b>` : `<b>${esc(name)}</b>`;
+  $('#brand').innerHTML = `<img class="mark" src="icons/mark.png" alt="" width="24" height="24"><span>${word}</span>`;
   const s = streak();
   $('#streak').innerHTML = s.n ? `${px('flame', 13)}${s.n}` : '';
   $('#streak').hidden = !s.n;
@@ -625,7 +627,7 @@ setInterval(() => {
     const on = Math.floor((1 - T.left / T.total) * 30);
     document.querySelectorAll('#tblocks i').forEach((el, i) => el.classList.toggle('on', i < on));
   }
-  document.title = T.running ? `${mmss(T.left)} · ${T.mode === 'break' ? 'Break' : 'Focus'}` : (S.settings.appName || 'Attack Mode');
+  document.title = T.running ? `${mmss(T.left)} · ${T.mode === 'break' ? 'Break' : 'Focus'}` : (S.settings.appName || 'Aware Mode');
 }, 500);
 const mmss = s => `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
 
@@ -1152,7 +1154,7 @@ const ACT = {
   tabMove(el) { moveIn(S.settings.tabs, +el.dataset.i, +el.dataset.dir); save(); render(); },
   async export() {
     const json = JSON.stringify(S);
-    if (!NATIVE) return download(`attack-mode-backup-${todayKey()}.json`, JSON.stringify(S, null, 2), 'application/json');
+    if (!NATIVE) return download(`aware-mode-backup-${todayKey()}.json`, JSON.stringify(S, null, 2), 'application/json');
     const ok = await modal(`<h2>Backup</h2><p class="small muted">Copy this text and keep it somewhere safe (notes app, email to yourself). Paste it back with "Paste backup".</p><textarea id="bk" readonly style="min-height:160px;font-family:ui-monospace,monospace;font-size:.75rem">${esc(json)}</textarea>`, [{ label: 'Close', value: false, cls: 'ghost' }, { label: 'Copy backup', value: true, cls: 'primary' }]);
     if (ok) copyText(json);
   },
@@ -1161,7 +1163,7 @@ const ACT = {
     if (!txt) return;
     try {
       const data = JSON.parse(txt);
-      if (!data || !data.days || !data.settings) throw new Error('Not an Attack Mode backup');
+      if (!data || !data.days || !data.settings) throw new Error('Not an Aware Mode backup');
       S = migrate(data); save(); applyTheme(); render(); toast('Backup restored');
     } catch (e) { toast('Restore failed: ' + e.message); }
   },
@@ -1169,7 +1171,7 @@ const ACT = {
     const file = f.files[0]; if (!file) return;
     try {
       const data = JSON.parse(await file.text());
-      if (!data || typeof data !== 'object' || !data.days || !data.settings) throw new Error('Not an Attack Mode backup');
+      if (!data || typeof data !== 'object' || !data.days || !data.settings) throw new Error('Not an Aware Mode backup');
       if (!(await confirmBox(`Replace all current data with this backup (${Object.keys(data.days).length} days)?`, 'Replace'))) return;
       S = migrate(data); save(); applyTheme(); render(); toast('Backup imported');
     } catch (e) { toast('Import failed: ' + e.message); }
@@ -1177,7 +1179,7 @@ const ACT = {
   csv() {
     const rows = [['date', 'what', 'qty', 'unit', 'detail', 'when', 'where', 'pd', 'ad', 'done', 'grade', 'notes']];
     taskHistory().forEach(({ k, t }) => rows.push([k, t.what, t.qty ?? '', t.unit, t.detail, t.when, t.where, t.pd ?? '', t.ad ?? '', t.done ? 1 : 0, t.grade, t.notes]));
-    download(`attack-mode-tasks-${todayKey()}.csv`, rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n'), 'text/csv');
+    download(`aware-mode-tasks-${todayKey()}.csv`, rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n'), 'text/csv');
   },
   resetSettings: async () => { if (!(await confirmBox('Reset all settings (prompts, factors, timer, labels) to defaults? Your tasks, rules and journal stay.', 'Reset'))) return; S.settings = defaultSettings(); save(); applyTheme(); render(); },
   wipe: async () => { if (!(await confirmBox('Erase ALL data on this device? Export a backup first if you want to keep it.', 'Erase everything', 'danger'))) return; S = fresh(); save(); applyTheme(); go('attack'); },
@@ -1200,6 +1202,7 @@ function boot() {
   if (!sp) return go(first);
   if (S.settings.showSplash === false) { sp.remove(); return go(first); }
   const lines = (S.settings.loadingLines || []).filter(Boolean);
+  { const n = (S.settings.appName || 'Aware Mode').split(' '); $('#splashWord').innerHTML = n.length > 1 ? `${esc(n.slice(0, -1).join(' '))} <b>${esc(n.at(-1))}</b>` : `<b>${esc(n[0])}</b>`; }
   $('#splashLine').textContent = lines.length ? lines[Math.floor(Math.random() * lines.length)] : '';
   const cells = sp.querySelectorAll('.blocks i'), pctEl = $('#splashPct');
   const setP = p => { cells.forEach((c, i) => c.classList.toggle('on', i < Math.round(p / 100 * cells.length))); pctEl.textContent = p + '%'; };

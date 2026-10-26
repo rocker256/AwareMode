@@ -3,29 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#151412">
-<meta name="description" content="Personal Attack Today/Tomorrow planner: 7/10 system, 30/10 focus timer, WOOP, company manual.">
+<meta name="theme-color" content="#060914">
+<meta name="description" content="Aware Mode: personal Attack Today/Tomorrow planner: 7/10 system, 30/10 focus timer, WOOP, company manual.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Attack Mode">
-<title>Attack Mode</title>
+<meta name="apple-mobile-web-app-title" content="Aware Mode">
+<title>Aware Mode</title>
 <script>try{var s=(JSON.parse(localStorage.getItem('attackmode.data.v1')||'{}').settings)||{};document.documentElement.dataset.style=s.style||'pixel';}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="preload" href="fonts/silkscreen-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div id="splash" role="status" aria-label="Loading">
-  <svg class="logo" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" shape-rendering="crispEdges"><rect x="4" y="0" width="4" height="1" fill="var(--accent)"/><rect x="4" y="1" width="4" height="1" fill="var(--accent)"/><rect x="3" y="2" width="6" height="1" fill="var(--accent)"/><rect x="3" y="3" width="2" height="1" fill="var(--accent)"/><rect x="7" y="3" width="2" height="1" fill="var(--accent)"/><rect x="2" y="4" width="3" height="1" fill="var(--accent)"/><rect x="7" y="4" width="3" height="1" fill="var(--accent)"/><rect x="2" y="5" width="2" height="1" fill="var(--accent)"/><rect x="8" y="5" width="2" height="1" fill="var(--accent)"/><rect x="1" y="6" width="7" height="1" fill="#f4f1ea"/><rect x="8" y="6" width="3" height="1" fill="var(--accent)"/><rect x="1" y="7" width="7" height="1" fill="#f4f1ea"/><rect x="8" y="7" width="3" height="1" fill="var(--accent)"/><rect x="1" y="8" width="2" height="1" fill="var(--accent)"/><rect x="9" y="8" width="2" height="1" fill="var(--accent)"/><rect x="0" y="9" width="2" height="1" fill="var(--accent)"/><rect x="10" y="9" width="2" height="1" fill="var(--accent)"/><rect x="0" y="10" width="2" height="1" fill="var(--accent)"/><rect x="10" y="10" width="2" height="1" fill="var(--accent)"/><rect x="0" y="11" width="2" height="1" fill="var(--accent)"/><rect x="10" y="11" width="2" height="1" fill="var(--accent)"/></svg>
-  <svg class="logo-smooth" viewBox="0 0 100 100" aria-hidden="true"><path d="M41 8h18l33 84H72l-7-19H35l-7 19H8z" fill="var(--accent)"/><rect x="22" y="54" width="46" height="12" rx="3" fill="#f4f1ea"/></svg>
-  <div class="word">Attack <b>Mode</b></div>
+  <img class="logo-img" src="icons/mark.png" alt="" width="132" height="132">
+  <div class="word" id="splashWord">Aware <b>Mode</b></div>
   <div class="line" id="splashLine">Win the day before it starts.</div>
   <div class="load"><div class="row"><span>Loading your plan</span><span id="splashPct">0%</span></div><div class="blocks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
 </div>
-<header class="top"><div class="bar"><div class="brand" id="brand">Attack <b>Mode</b></div><span class="spacer"></span><span class="pill" id="streak" hidden></span></div></header>
+<header class="top"><div class="bar"><div class="brand" id="brand">Aware <b>Mode</b></div><span class="spacer"></span><span class="pill" id="streak" hidden></span></div></header>
 <nav id="nav" aria-label="Sections"></nav>
 <main id="main"><div class="wrap"><p class="muted">Loading…</p></div></main>
 <div id="modal" hidden></div>
