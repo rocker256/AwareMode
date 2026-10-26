@@ -32,6 +32,7 @@ const TABS = [
   { id: 'woop', label: 'WOOP', icon: '◎' },
   { id: 'manual', label: 'Manual', icon: '▤' },
   { id: 'insights', label: 'Insights', icon: '↗' },
+  { id: 'history', label: 'History', icon: '≡' },
   { id: 'settings', label: 'Settings', icon: '⚙' },
 ];
 
@@ -98,7 +99,11 @@ function migrate(s) {
   s.settings = Object.assign({}, d, s.settings || {});
   for (const k of ['labels', 'placeholders', 'timer']) s.settings[k] = Object.assign({}, d[k], s.settings[k] || {});
   const tabs = s.settings.tabs || [];
-  s.settings.tabs = [...tabs.filter(t => TABS.some(x => x.id === t.id)), ...TABS.filter(t => !tabs.some(x => x.id === t.id)).map(t => ({ id: t.id, label: t.label, visible: true }))];
+  s.settings.tabs = tabs.filter(t => TABS.some(x => x.id === t.id));
+  TABS.filter(t => !s.settings.tabs.some(x => x.id === t.id)).forEach(t => {
+    const i = s.settings.tabs.findIndex(x => x.id === 'settings');
+    s.settings.tabs.splice(i < 0 ? s.settings.tabs.length : i, 0, { id: t.id, label: t.label, visible: true });
+  });
   s.days = s.days || {}; s.rules = s.rules || []; s.woops = s.woops || []; s.sessions = s.sessions || [];
   s.ui = Object.assign({ view: 'attack', open: {}, range: 14 }, s.ui || {});
   for (const k in s.days) { const dd = s.days[k]; dd.tasks = dd.tasks || []; dd.factors = dd.factors || {}; dd.journal = dd.journal || {}; dd.rules = dd.rules || {}; }
@@ -279,6 +284,7 @@ const PX = {
   woop: ['..#####..', '.#.....#.', '#..###..#', '#.#...#.#', '#.#.#.#.#', '#.#...#.#', '#..###..#', '.#.....#.', '..#####..'],
   manual: ['#########', '#...#...#', '#.#.#.#.#', '#...#...#', '#.#.#.#.#', '#...#...#', '#.#.#.#.#', '#...#...#', '#########'],
   insights: ['.........', '.......#.', '.......#.', '....#..#.', '....#..#.', '.#..#..#.', '.#..#..#.', '.#..#..#.', '#########'],
+  history: ['.........', '##.######', '.........', '##.######', '.........', '##.######', '.........', '##.######', '.........'],
   settings: ['...#.#...', '.#.###.#.', '..#####..', '###...###', '.##...##.', '###...###', '..#####..', '.#.###.#.', '...#.#...'],
   flame: ['....#....', '...##....', '...###...', '..####.#.', '..######.', '.###..##.', '.##....#.', '.##....#.', '..######.'],
   play: ['..#......', '..##.....', '..###....', '..####...', '..#####..', '..####...', '..###....', '..##.....', '..#......'],
@@ -436,6 +442,7 @@ V.attack = () => {
       <input type="date" value="${k}" data-act-change="pickDate" aria-label="Pick date">
       <button class="icon-btn" data-act="shiftDate" data-n="1" aria-label="Next day">&gt;</button>
       ${k !== t ? '<button class="btn sm" data-act="goToday">Today</button>' : ''}
+      <button class="btn sm" data-act="goHistory">History</button>
     </div></div>`;
   if (st.showPrinciple && st.principles.length) h += `<div class="principle">${esc(st.principles[(parseKey(k).getTime() / 864e5 | 0) % st.principles.length])}</div>`;
   if (reg && (reg.level === 'bad' || reg.level === 'warn') && k === t) h += `<div class="hint ${reg.level}" style="margin:10px 0"><div>${esc(reg.msg)} <a href="#manual">Open manual</a></div></div>`;
@@ -770,7 +777,7 @@ V.insights = () => {
     </table></div>` : '<div class="empty">Repeat tasks with the same name to see trends.</div>');
 
   h += sec('impact', 'What affects your performance', factorImpact(keys));
-  h += sec('history', 'Journal history', journalHistory(keys));
+  h += sec('history', 'Journal history', journalHistory(keys) + '<div class="row" style="margin-top:12px"><button class="btn sm" data-act="goHistory">See every day in History</button></div>');
   return h;
 };
 
@@ -818,6 +825,58 @@ function journalHistory(keys) {
   return ks.map(k => { const d = S.days[k]; return `<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="eyebrow"><a href="#attack" data-act="openDay" data-k="${k}">${esc(niceDate(k))}</a> · ${pct(dayCompletion(k))} done</div>
     ${Object.entries(d.journal).filter(([, v]) => v).map(([q, v]) => `<div class="small" style="margin-top:6px"><b>${esc(q)}</b><br>${esc(v).replace(/\n/g, '<br>')}</div>`).join('')}${d.note ? `<div class="small" style="margin-top:6px">${esc(d.note).replace(/\n/g, '<br>')}</div>` : ''}</div>`; }).join('');
 }
+
+/* ---------- History ---------- */
+function hasContent(k) { const d = S.days[k]; return !!d && (d.tasks.length || d.note || Object.values(d.journal).some(Boolean) || Object.keys(d.factors).length || Object.keys(d.rules).length); }
+function hasNotes(k) { const d = S.days[k]; return !!d && (!!d.note || Object.values(d.journal).some(Boolean) || d.tasks.some(t => t.notes)); }
+function dayText(k) {
+  const d = S.days[k];
+  return normName([niceDate(k, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), d.note, ...Object.entries(d.journal).flat(), ...d.tasks.flatMap(t => [t.what, t.detail, t.where, t.unit, t.notes])].filter(Boolean).join(' '));
+}
+function factorLine(d) {
+  return S.settings.factors.filter(f => d.factors[f.id] != null && d.factors[f.id] !== '').map(f => {
+    const v = d.factors[f.id];
+    return `${esc(f.name)} ${f.type === 'yesno' ? (v ? 'yes' : 'no') : f.type === 'scale' ? esc(v) + '/' + (f.max || 5) : esc(v) + (f.unit ? esc(f.unit) : '')}`;
+  }).join(' · ');
+}
+function historyDay(k) {
+  const d = S.days[k], ts = d.tasks, comp = dayCompletion(k), st = dayStatus(k);
+  const rv = Object.values(d.rules), fl = factorLine(d);
+  const journal = Object.entries(d.journal).filter(([, v]) => v);
+  return `<div class="card hday">
+    <div class="row between"><a href="#attack" class="h2" data-act="openDay" data-k="${k}">${esc(niceDate(k, { weekday: 'short', day: 'numeric', month: 'short' }))}</a>
+      <span class="small muted">${comp != null ? pct(comp) + ' done' : ''}${st !== 'normal' ? ` · ${st} day` : ''}</span></div>
+    ${ts.length ? `<ul class="hlist">${ts.map(t => `<li class="${t.done ? 'ok' : ''}"><span class="mark">${t.done ? '■' : '□'}</span><div style="min-width:0"><span>${esc(t.what || 'Untitled')}</span>
+      <span class="muted small">${esc([t.qty != null ? t.qty + ' ' + (t.unit || '') : '', t.pd ? `PD ${t.pd}${t.ad ? ' > AD ' + t.ad : ''}` : '', t.movedTo ? 'moved' : ''].filter(Boolean).join(' · '))}</span>
+      ${t.notes ? `<div class="small note">${esc(t.notes).replace(/\n/g, '<br>')}</div>` : ''}</div></li>`).join('')}</ul>` : ''}
+    ${fl || rv.length ? `<div class="small muted" style="margin-top:8px">${fl}${fl && rv.length ? ' · ' : ''}${rv.length ? `Rules ${rv.filter(Boolean).length}/${rv.length} followed` : ''}</div>` : ''}
+    ${journal.map(([q, v]) => `<div class="hq"><b>${esc(q)}</b>${esc(v).replace(/\n/g, '<br>')}</div>`).join('')}
+    ${d.note ? `<div class="hq"><b>Notes</b>${esc(d.note).replace(/\n/g, '<br>')}</div>` : ''}
+  </div>`;
+}
+function historyList() {
+  const q = normName(S.ui.hq || ''), f = S.ui.hf || 'all', limit = S.ui.hlimit || 30;
+  let keys = Object.keys(S.days).filter(hasContent).sort().reverse();
+  if (f === 'notes') keys = keys.filter(hasNotes);
+  if (q) keys = keys.filter(k => dayText(k).includes(q));
+  if (!keys.length) return `<div class="empty">${q ? 'Nothing matches that search.' : 'No days recorded yet. Everything you write on Today shows up here.'}</div>`;
+  let h = '', month = '';
+  keys.slice(0, limit).forEach(k => {
+    const m = parseKey(k).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    if (m !== month) { month = m; h += `<div class="eyebrow" style="margin:20px 0 -4px">${esc(m)}</div>`; }
+    h += historyDay(k);
+  });
+  if (keys.length > limit) h += `<button class="btn block" data-act="hMore">Show older days (${keys.length - limit} more)</button>`;
+  return `<div class="small muted">${keys.length} day${keys.length === 1 ? '' : 's'}</div>` + h;
+}
+V.history = () => {
+  const f = S.ui.hf || 'all';
+  return `<div class="dayhead"><div><div class="eyebrow">Everything you've written</div><h1 class="title">History</h1></div></div>
+    <p class="muted small">Every day is kept on this device: tasks, ratings, notes, journal, factors and rule check-ins. Tap a date to open and edit that day.</p>
+    <div class="row" style="margin:12px 0"><input type="search" id="hsearch" placeholder="Search tasks, notes, journal" value="${esc(S.ui.hq || '')}" aria-label="Search history" style="flex:1;min-width:180px">
+      <div class="seg">${[['all', 'All days'], ['notes', 'With notes']].map(([v, l]) => `<button class="${f === v ? 'on' : ''}" data-act="hFilter" data-v="${v}">${l}</button>`).join('')}</div></div>
+    <div id="hlist">${historyList()}</div>`;
+};
 
 /* ---------- Settings ---------- */
 function listEditor(path, title, hint) {
@@ -934,6 +993,7 @@ function bindSet(el) {
 }
 document.addEventListener('input', e => {
   const el = e.target;
+  if (el.id === 'hsearch') { S.ui.hq = el.value; S.ui.hlimit = 30; $('#hlist').innerHTML = historyList(); return; }
   if (!el.dataset?.bind || el.type === 'checkbox' || el.tagName === 'SELECT') return;
   bindSet(el);
 });
@@ -993,6 +1053,9 @@ const ACT = {
   applySug(el) { const t = findTask(el.dataset.k, el.dataset.id); if (t) { t.qty = +el.dataset.q; save(); render(); } },
   shiftDate(el) { const k = addDays(S.ui.date || todayKey(), +el.dataset.n); S.ui.date = k === todayKey() ? null : k; render(); },
   goToday() { S.ui.date = null; render(); },
+  goHistory() { go('history'); },
+  hFilter(el) { S.ui.hf = el.dataset.v; S.ui.hlimit = 30; save(); render(); },
+  hMore() { S.ui.hlimit = (S.ui.hlimit || 30) + 30; $('#hlist').innerHTML = historyList(); },
   openDay(el, e) { e.preventDefault(); S.ui.date = el.dataset.k === todayKey() ? null : el.dataset.k; go('attack'); },
   setStatus(el) { const d = getDay(el.dataset.k, true); const def = S.settings.restDays.includes(weekday(el.dataset.k)) ? 'rest' : 'normal'; d.status = el.dataset.v === def ? '' : el.dataset.v; save(); render(); },
   print() { window.print(); },
