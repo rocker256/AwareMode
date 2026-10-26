@@ -23,6 +23,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box;border-radius:0!important}
+[hidden]{display:none!important}
 html{font-size:var(--fs);-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--body);padding-bottom:calc(72px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -51,7 +52,7 @@ h1,h2,h3{margin:0;line-height:1.1;text-wrap:balance}
 /* bottom nav */
 nav#nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:var(--px) solid var(--line-strong);display:flex;overflow-x:auto;padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);scrollbar-width:none}
 nav#nav::-webkit-scrollbar{display:none}
-nav#nav a{flex:1 1 0;min-width:50px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px 8px;color:var(--muted);text-decoration:none;font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;position:relative}
+nav#nav a{flex:1 1 0;min-width:44px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 2px 8px;color:var(--muted);text-decoration:none;font-size:.54rem;letter-spacing:0;text-transform:uppercase;white-space:nowrap;position:relative}
 nav#nav a.on{color:var(--accent)}
 nav#nav a.on::before{content:"";position:absolute;top:-2px;left:25%;right:25%;height:4px;background:var(--accent)}
 @media (min-width:900px){
@@ -85,7 +86,7 @@ details.sec>.body{padding:0 16px 16px}
 /* form */
 label.f{display:flex;flex-direction:column;gap:5px;min-width:0}
 label.f>span,.lbl{font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500}
-input[type=text],input:not([type]),input[type=number],input[type=time],input[type=date],select,textarea{width:100%;min-width:0;background:var(--surface2);border:var(--px) solid transparent;padding:8px 10px;outline:none}
+input[type=text],input[type=search],input:not([type]),input[type=number],input[type=time],input[type=date],select,textarea{width:100%;min-width:0;background:var(--surface2);border:var(--px) solid transparent;padding:8px 10px;outline:none}
 input:focus,select:focus,textarea:focus{border-color:var(--ink);background:var(--surface)}
 textarea{min-height:64px;resize:vertical}
 input[type=color]{width:44px;height:34px;border:var(--px) solid var(--line-strong);background:none;padding:0}
@@ -241,6 +242,18 @@ table.cgrid td.pc{font-family:var(--pixel);padding-left:8px}
 .wstep.filled .n{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .wstep h3{font-family:var(--pixel);font-size:1rem;text-transform:uppercase;font-weight:400;margin-top:2px}
 .wstep .q{font-size:.76rem;color:var(--muted);margin:2px 0 6px}
+
+/* history */
+.hday a.h2{color:var(--ink);text-decoration:none}
+.hday a.h2:hover{color:var(--accent)}
+.hlist{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:7px}
+.hlist li{display:flex;gap:10px;align-items:flex-start;font-size:.86rem}
+.hlist li>div span{margin-right:8px}
+.hlist .mark{font-family:var(--pixel);color:var(--muted);line-height:1.5}
+.hlist li.ok .mark{color:var(--good)}
+.hlist .note{border-left:2px solid var(--line);padding-left:8px;margin-top:3px;color:var(--muted)}
+.hq{font-size:.84rem;margin-top:10px}
+.hq b{display:block;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:500}
 
 /* list editor */
 .le-row{display:flex;gap:6px;align-items:center;margin:6px 0}
