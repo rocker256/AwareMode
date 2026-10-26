@@ -4,7 +4,7 @@
   "private": true,
   "description": "Attack Mode personal planner (web + Android)",
   "scripts": {
-    "www": "rm -rf www && mkdir www && cp -r index.html app.js styles.css manifest.webmanifest icons www/",
+    "www": "rm -rf www && mkdir www && cp -r index.html app.js styles.css manifest.webmanifest icons fonts www/",
     "sync": "npm run www && npx cap sync android"
   },
   "dependencies": {
@@ -14,6 +14,8 @@
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^7.6.9"
+    "@capacitor/cli": "^7.6.9",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/silkscreen": "^5.3.0"
   }
 }
