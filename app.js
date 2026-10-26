@@ -83,6 +83,8 @@ function defaultSettings() {
       'A missed day is data, not a verdict. Check sleep, food, activity and noise before blaming discipline.',
       'Build a flexible system: grace days and rest days keep it alive.',
     ],
+    showSplash: true,
+    loadingLines: ['Win the day before it starts.', 'Clarity creates execution.', 'Plan harder. Execute calmer.', 'Discipline creates freedom.', 'One block at a time.', 'Seven out of ten. Every day.'],
     tabs: TABS.map(t => ({ id: t.id, label: t.label, visible: true })),
   };
 }
@@ -235,7 +237,7 @@ function applyTheme() {
   root.style.setProperty('--accent', st.accent);
   root.style.setProperty('--hard', st.accent);
   root.style.setProperty('--fs', (st.fontScale || 100) + '%');
-  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = st.accent;
+  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = dark ? '#0f0e0d' : '#f4f1ea';
   document.title = st.appName || 'Attack Mode';
 }
 mq.addEventListener?.('change', applyTheme);
@@ -268,31 +270,91 @@ function scale(path, val, tgt) {
 }
 function inp(bind, val, attrs = '') { return `<input data-bind="${bind}" value="${esc(val ?? '')}" ${attrs}>`; }
 
+/* ---------- pixel icons ---------- */
+// '#' = current colour, 'a' = accent, 'c' = cream. Drawn on a square grid with crisp edges.
+const PX = {
+  today: ['#########', '#.......#', '#########', '#.......#', '#.....#.#', '#.#..#..#', '#..##...#', '#.......#', '#########'],
+  plan: ['.........', '.....#...', '.....##..', '.....###.', '#########', '.....###.', '.....##..', '.....#...', '.........'],
+  focus: ['..#####..', '.#.....#.', '#...#...#', '#...#...#', '#...###.#', '#.......#', '#.......#', '.#.....#.', '..#####..'],
+  woop: ['..#####..', '.#.....#.', '#..###..#', '#.#...#.#', '#.#.#.#.#', '#.#...#.#', '#..###..#', '.#.....#.', '..#####..'],
+  manual: ['#########', '#...#...#', '#.#.#.#.#', '#...#...#', '#.#.#.#.#', '#...#...#', '#.#.#.#.#', '#...#...#', '#########'],
+  insights: ['.........', '.......#.', '.......#.', '....#..#.', '....#..#.', '.#..#..#.', '.#..#..#.', '.#..#..#.', '#########'],
+  settings: ['...#.#...', '.#.###.#.', '..#####..', '###...###', '.##...##.', '###...###', '..#####..', '.#.###.#.', '...#.#...'],
+  flame: ['....#....', '...##....', '...###...', '..####.#.', '..######.', '.###..##.', '.##....#.', '.##....#.', '..######.'],
+  play: ['..#......', '..##.....', '..###....', '..####...', '..#####..', '..####...', '..###....', '..##.....', '..#......'],
+  pause: ['.........', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.........'],
+  chev: ['#....', '.#...', '..#..', '...#.', '..#..', '.#...', '#....'],
+  plus: ['...#...', '...#...', '...#...', '#######', '...#...', '...#...', '...#...'],
+  logo: ['....aaaa....', '....aaaa....', '...aaaaaa...', '...aa..aa...', '..aaa..aaa..', '..aa....aa..', '.cccccccaaa.', '.cccccccaaa.', '.aa......aa.', 'aa........aa', 'aa........aa', 'aa........aa'],
+};
+function px(name, size = 18) {
+  const rows = PX[name]; if (!rows) return '';
+  const h = rows.length, w = rows[0].length, fills = { '#': 'currentColor', a: 'var(--accent)', c: '#f4f1ea' };
+  let r = '';
+  rows.forEach((row, y) => {
+    for (let x = 0; x < w;) {
+      const c = row[x]; if (c === '.') { x++; continue; }
+      let n = 1; while (row[x + n] === c) n++;
+      r += `<rect x="${x}" y="${y}" width="${n}" height="1" fill="${fills[c]}"/>`; x += n;
+    }
+  });
+  return `<svg class="pxi" width="${size}" height="${Math.round(size * h / w)}" viewBox="0 0 ${w} ${h}" aria-hidden="true">${r}</svg>`;
+}
+const blocks = (n, on, cls = 'on', id = '') => `<div class="blocks" ${id ? `id="${id}"` : ''} style="--n:${n}">${Array.from({ length: n }, (_, i) => `<i class="${i < on ? cls : ''}"></i>`).join('')}</div>`;
+function mix(ts) {
+  const c = { hard: 0, medium: 0, easy: 0 };
+  ts.forEach(t => { const k = kindOf(t); if (k) c[k]++; });
+  return c;
+}
+function mixBar(ts) {
+  const c = mix(ts), n = Math.max(1, ts.length);
+  const cells = [...Array(c.hard).fill('h'), ...Array(c.medium).fill('m'), ...Array(c.easy).fill('e')];
+  return `<div class="blocks" style="--n:${n}">${Array.from({ length: n }, (_, i) => `<i class="${cells[i] || ''}"></i>`).join('')}</div>
+    <div class="legend-row"><span><i class="sq" style="background:var(--hard)"></i>${c.hard} hard</span><span><i class="sq" style="background:var(--medium)"></i>${c.medium} medium</span><span><i class="sq" style="background:var(--easy)"></i>${c.easy} easy</span>${ts.length - c.hard - c.medium - c.easy ? `<span><i class="sq" style="background:var(--surface2)"></i>${ts.length - c.hard - c.medium - c.easy} unrated</span>` : ''}</div>`;
+}
+
 /* ---------- nav ---------- */
 function renderNav() {
   const v = S.ui.view;
-  $('#nav').innerHTML = S.settings.tabs.filter(t => t.visible || t.id === 'settings').map(t => {
-    const icon = TABS.find(x => x.id === t.id).icon;
-    return `<a href="#${t.id}" class="${v === t.id ? 'on' : ''}" data-nav="${t.id}"><span class="ic">${icon}</span>${esc(t.label)}</a>`;
-  }).join('');
+  $('#nav').innerHTML = S.settings.tabs.filter(t => t.visible || t.id === 'settings').map(t =>
+    `<a href="#${t.id}" class="${v === t.id ? 'on' : ''}" data-nav="${t.id}">${px(t.id === 'attack' ? 'today' : t.id, 18)}<span>${esc(t.label)}</span></a>`).join('');
   const name = S.settings.appName || 'Attack Mode';
   const parts = name.split(' ');
   $('#brand').innerHTML = parts.length > 1 ? `${esc(parts.slice(0, -1).join(' '))} <b>${esc(parts.at(-1))}</b>` : `<b>${esc(name)}</b>`;
   const s = streak();
-  $('#streak').innerHTML = s.n ? `🔥 ${s.n} day${s.n > 1 ? 's' : ''}` : '';
+  $('#streak').innerHTML = s.n ? `${px('flame', 13)}${s.n}` : '';
   $('#streak').hidden = !s.n;
+  $('#streak').title = s.n ? `${s.n}-day streak` : '';
 }
 
-/* ---------- task card ---------- */
-function taskCard(k, t, i, mode) {
-  const st = S.settings, L = st.labels, P = st.placeholders, kind = kindOf(t), tg = st.targetDifficulty;
+/* ---------- task rows ---------- */
+const openTask = new Set();
+function taskRow(k, t, i, mode) {
+  const kind = kindOf(t), today = mode === 'today', open = openTask.has(t.id);
   const p = `task|${k}|${t.id}|`;
-  const today = mode === 'today';
+  const amount = t.qty != null ? `${t.qty}${t.unit ? ' ' + t.unit : ''}` : '';
+  const sub = t.movedTo ? 'Moved to ' + niceDate(t.movedTo, { weekday: 'short', day: 'numeric', month: 'short' })
+    : [t.when, amount, t.detail, t.where].filter(Boolean).join(' · ') || 'Tap to set amount, time and place';
+  const dd = t.pd ? (today && t.ad ? `${t.pd}>${t.ad}` : `${t.pd}/10`) : '';
+  return `<div class="task ${t.done ? 'done' : ''} ${t.movedTo ? 'moved' : ''} ${open ? 'open' : ''}">
+    <div class="trow" data-act="toggleTask" data-id="${t.id}" role="button" tabindex="0" aria-expanded="${open}">
+      ${today && !t.movedTo ? `<label class="check" title="Done"><input type="checkbox" data-bind="${p}done" data-rr ${t.done ? 'checked' : ''} aria-label="Mark done"><span></span></label>` : `<span class="num">${pad(i + 1)}</span>`}
+      <div class="t"><div class="name">${t.what ? esc(t.what) : '<span class="muted">Untitled task</span>'}</div><div class="sub">${esc(sub)}</div></div>
+      ${t.grade === 'g0' ? '<span class="tag grade" title="Grade 0 starter">G0</span>' : t.grade === 'g1' ? '<span class="tag grade" title="Grade 1 starter">G1</span>' : ''}
+      ${kind ? `<span class="tag ${kind}">${kind}</span>` : ''}
+      ${dd ? `<span class="dd" title="Predicted${today && t.ad ? ' > actual' : ''} difficulty">${dd}</span>` : ''}
+      <span class="chev">${px('chev', 7)}</span>
+    </div>
+    ${open ? taskEditor(k, t, mode) : ''}
+  </div>`;
+}
+function taskEditor(k, t, mode) {
+  const st = S.settings, L = st.labels, P = st.placeholders, tg = st.targetDifficulty, today = mode === 'today';
+  const p = `task|${k}|${t.id}|`;
   let meta = '';
-  if (t.movedTo) meta = `<span class="muted">Moved to ${esc(niceDate(t.movedTo, { weekday: 'short', day: 'numeric', month: 'short' }))}</span>`;
-  else if (today && t.pd && t.ad) {
+  if (today && t.pd && t.ad) {
     const d = t.ad - t.pd;
-    meta = d === 0 ? `<span class="muted">Predicted it right: ${t.pd}/10.</span>` : `<span class="muted">${d > 0 ? 'Harder' : 'Easier'} than expected (${t.pd} → ${t.ad}).</span>`;
+    meta = d === 0 ? `Predicted it right: ${t.pd}/10.` : `${d > 0 ? 'Harder' : 'Easier'} than expected (${t.pd} > ${t.ad}).`;
     if (t.ad <= tg - 2) meta += ` <span class="tag easy">overload next time</span>`;
     if (t.ad >= tg + 2) meta += ` <span class="tag hard">scale back</span>`;
   }
@@ -300,44 +362,43 @@ function taskCard(k, t, i, mode) {
     const s = suggestFor(t.what, k);
     if (s) meta += `<span>${esc(s.text)}</span>${s.qty != null && s.qty !== t.qty ? ` <button class="btn sm" data-act="applySug" data-k="${k}" data-id="${t.id}" data-q="${s.qty}">Apply</button>` : ''}`;
   }
-  const gradeTag = t.grade === 'g0' ? '<span class="tag grade">Grade 0 · 1-min</span>' : t.grade === 'g1' ? '<span class="tag grade">Grade 1 · 10-min</span>' : '';
-  return `<article class="task ${t.done ? 'done' : ''} ${t.movedTo ? 'moved' : ''}">
-    <div class="task-head">
-      <span class="num">${pad(i + 1)}</span>
-      ${today ? `<label class="check" title="Done"><input type="checkbox" data-bind="${p}done" data-rr ${t.done ? 'checked' : ''} aria-label="Mark done"><span></span></label>` : ''}
-      ${inp(p + 'what', t.what, `class="what" placeholder="${esc(P.what)}" aria-label="${esc(L.what)}"`)}
-      ${gradeTag}${kind ? `<span class="tag ${kind}">${kind}</span>` : ''}
-    </div>
+  return `<div class="editor" data-id="${t.id}">
+    <label class="f"><span>${esc(L.what)}</span>${inp(p + 'what', t.what, `class="what" placeholder="${esc(P.what)}"`)}</label>
     <div class="fields">
-      <label class="f"><span>${esc(L.howMuch)}</span><div class="qty">${inp(p + 'qty', t.qty, 'type="number" step="any" inputmode="decimal" placeholder="0"')}${inp(p + 'unit', t.unit, `placeholder="${esc(P.unit)}"`)}</div></label>
+      <label class="f"><span>${esc(L.howMuch)}</span><div class="qty">${inp(p + 'qty', t.qty, 'type="number" step="any" inputmode="decimal" placeholder="0" aria-label="Amount"')}${inp(p + 'unit', t.unit, `placeholder="${esc(P.unit)}" aria-label="Unit"`)}</div></label>
       <label class="f"><span>Detail</span>${inp(p + 'detail', t.detail, `placeholder="${esc(P.detail)}"`)}</label>
       <label class="f"><span>${esc(L.when)}</span>${inp(p + 'when', t.when, 'type="time"')}</label>
       <label class="f"><span>${esc(L.where)}</span>${inp(p + 'where', t.where, `placeholder="${esc(P.where)}"`)}</label>
     </div>
     <div class="diff">
-      <div class="dial"><span class="lbl">Predicted difficulty (PD)<b>${t.pd ? t.pd + '/10' : ''}</b></span>${scale(p + 'pd', t.pd, tg)}</div>
-      ${today ? `<div class="dial"><span class="lbl">Actual difficulty (AD)<b>${t.ad ? t.ad + '/10' : ''}</b></span>${scale(p + 'ad', t.ad, tg)}</div>` : ''}
+      <div class="dial"><span class="lbl">Predicted difficulty<b>${t.pd ? t.pd + '/10' : ''}</b></span>${scale(p + 'pd', t.pd, tg)}</div>
+      ${today ? `<div class="dial"><span class="lbl">Actual difficulty<b>${t.ad ? t.ad + '/10' : ''}</b></span>${scale(p + 'ad', t.ad, tg)}</div>` : ''}
     </div>
     ${meta ? `<div class="meta">${meta}</div>` : ''}
-    <details class="more" data-more="${t.id}" ${openMore.has(t.id) ? 'open' : ''}><summary>More</summary><div class="body">
-      <label class="f"><span>Starter grade (procrastination destroyer)</span>
+    <div class="grid g2">
+      <label class="f"><span>Starter grade</span>
         <select data-bind="${p}grade" data-rr>
           <option value="full" ${t.grade === 'full' ? 'selected' : ''}>Full task</option>
-          <option value="g1" ${t.grade === 'g1' ? 'selected' : ''}>Grade 1: ${st.timer.starterG1}-minute version</option>
-          <option value="g0" ${t.grade === 'g0' ? 'selected' : ''}>Grade 0: ${st.timer.starterG0}-minute version</option>
+          <option value="g1" ${t.grade === 'g1' ? 'selected' : ''}>Grade 1: ${st.timer.starterG1}-min version</option>
+          <option value="g0" ${t.grade === 'g0' ? 'selected' : ''}>Grade 0: ${st.timer.starterG0}-min version</option>
         </select></label>
-      <label class="f"><span>Notes</span><textarea data-bind="${p}notes" placeholder="Obstacles, time spent, why it went the way it did">${esc(t.notes)}</textarea></label>
-      <div class="row">
-        <button class="btn sm" data-act="focusTask" data-k="${k}" data-id="${t.id}">◷ Focus on this</button>
-        ${today && !t.done && !t.movedTo ? `<button class="btn sm" data-act="moveTask" data-k="${k}" data-id="${t.id}">→ Tomorrow</button>` : ''}
-        <button class="btn sm" data-act="dupTask" data-k="${k}" data-id="${t.id}">Duplicate</button>
-        <button class="icon-btn" data-act="mvTask" data-dir="-1" data-k="${k}" data-id="${t.id}" title="Move up">↑</button>
-        <button class="icon-btn" data-act="mvTask" data-dir="1" data-k="${k}" data-id="${t.id}" title="Move down">↓</button>
-        <span style="flex:1"></span>
-        <button class="btn sm danger" data-act="delTask" data-k="${k}" data-id="${t.id}">Delete</button>
-      </div>
-    </div></details>
-  </article>`;
+      <label class="f"><span>Notes</span><textarea data-bind="${p}notes" rows="1" style="min-height:38px" placeholder="Obstacles, time spent, why">${esc(t.notes)}</textarea></label>
+    </div>
+    <div class="row">
+      <button class="btn sm" data-act="focusTask" data-k="${k}" data-id="${t.id}">${px('play', 9)} Focus</button>
+      ${today && !t.done && !t.movedTo ? `<button class="btn sm" data-act="moveTask" data-k="${k}" data-id="${t.id}">To tomorrow</button>` : ''}
+      <button class="btn sm" data-act="dupTask" data-k="${k}" data-id="${t.id}">Duplicate</button>
+      <button class="icon-btn" data-act="mvTask" data-dir="-1" data-k="${k}" data-id="${t.id}" title="Move up" aria-label="Move up">^</button>
+      <button class="icon-btn" data-act="mvTask" data-dir="1" data-k="${k}" data-id="${t.id}" title="Move down" aria-label="Move down">v</button>
+      <span style="flex:1"></span>
+      <button class="btn sm danger" data-act="delTask" data-k="${k}" data-id="${t.id}">Delete</button>
+    </div>
+  </div>`;
+}
+function taskList(k, mode, emptyMsg) {
+  const d = S.days[k] || { tasks: [] };
+  return `<div class="tasks">${d.tasks.length ? d.tasks.map((x, i) => taskRow(k, x, i, mode)).join('') : `<div class="empty-row">${emptyMsg}</div>`}
+    <button class="add-task" data-act="addTask" data-k="${k}">${px('plus', 9)} Add task</button></div>`;
 }
 
 function dayHints(k, mode) {
@@ -360,54 +421,51 @@ const V = {};
 V.attack = () => {
   const st = S.settings, t = todayKey();
   const k = S.ui.date || t;
-  const d = getDay(k) || { tasks: [], factors: {}, journal: {}, rules: {}, note: '' };
   const ts = activeTasks(k), status = dayStatus(k);
   const done = ts.filter(x => x.done).length;
+  const pctDone = ts.length ? Math.round(done / ts.length * 100) : 0;
+  const ad = dayAvg(k, 'ad'), pd = dayAvg(k, 'pd'), load = ad ?? pd;
   const mins = S.sessions.filter(s => s.d === k && s.type !== 'break').reduce((a, s) => a + s.m, 0);
   const reg = regression();
-  const now = new Date();
   const tomorrowEmpty = !activeTasks(addDays(t, 1)).length;
   let h = `<div class="dayhead">
-    <div><div class="eyebrow">${k === t ? 'Attack today' : k > t ? 'Planned day' : 'Past day'} · ${esc(niceDate(k))}</div>
-      <h1 class="title"><u>Attack Today</u>/Tomorrow</h1></div>
+    <div><div class="eyebrow">${k === t ? 'Attack today' : k > t ? 'Planned day' : 'Past day'}</div>
+      <h1 class="title">${k === t ? 'Today' : esc(niceDate(k, { weekday: 'short' }))}</h1></div>
     <div class="datenav no-print">
-      <button class="icon-btn" data-act="shiftDate" data-n="-1" aria-label="Previous day">◀</button>
+      <button class="icon-btn" data-act="shiftDate" data-n="-1" aria-label="Previous day">&lt;</button>
       <input type="date" value="${k}" data-act-change="pickDate" aria-label="Pick date">
-      <button class="icon-btn" data-act="shiftDate" data-n="1" aria-label="Next day">▶</button>
+      <button class="icon-btn" data-act="shiftDate" data-n="1" aria-label="Next day">&gt;</button>
       ${k !== t ? '<button class="btn sm" data-act="goToday">Today</button>' : ''}
     </div></div>`;
   if (st.showPrinciple && st.principles.length) h += `<div class="principle">${esc(st.principles[(parseKey(k).getTime() / 864e5 | 0) % st.principles.length])}</div>`;
-  if (reg && (reg.level === 'bad' || reg.level === 'warn') && k === t) h += `<div class="hint ${reg.level}" style="margin:10px 0"><b>⚠</b><div>${esc(reg.msg)} <a href="#manual">Open manual</a></div></div>`;
-  if (k === t && now.getHours() >= st.planReminderHour && tomorrowEmpty) h += `<div class="hint accent" style="margin:10px 0"><b>➜</b><div>Plan tomorrow before today ends. <a href="#plan">Build tomorrow now</a></div></div>`;
+  if (reg && (reg.level === 'bad' || reg.level === 'warn') && k === t) h += `<div class="hint ${reg.level}" style="margin:10px 0"><div>${esc(reg.msg)} <a href="#manual">Open manual</a></div></div>`;
+  if (k === t && new Date().getHours() >= st.planReminderHour && tomorrowEmpty) h += `<div class="hint accent" style="margin:10px 0"><div>Plan tomorrow before today ends. <a href="#plan">Build tomorrow</a></div></div>`;
 
-  h += `<div class="card"><div class="row between" style="margin-bottom:10px">
-      <div class="seg" role="group" aria-label="Day type">
-        ${['normal', 'grace', 'rest'].map(s => `<button class="${status === s ? 'on' : ''}" data-act="setStatus" data-k="${k}" data-v="${s}">${s === 'normal' ? 'Attack day' : s === 'grace' ? 'Grace day' : 'Rest day'}</button>`).join('')}
-      </div>
-      ${NATIVE ? '' : '<button class="btn sm no-print" data-act="print">Print sheet</button>'}
+  h += `<div class="card ink"><div class="hero">
+      <div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${done} of ${ts.length} done</div></div>
+      <div style="min-width:0">
+        <div class="row between"><span class="lbl">${ad != null ? 'Actual load' : 'Planned load'}</span><span class="pixel">${fmt1(load)}<span class="muted">/10</span></span></div>
+        ${blocks(10, Math.round(load || 0), 'on')}
+        <div class="row between" style="margin-top:14px"><span class="lbl">Mix</span><span class="small muted">target ${st.hardTasksTarget} hard</span></div>
+        ${mixBar(ts)}
+      </div></div>
+    <div class="row between" style="margin-top:16px">
+      <div class="seg" role="group" aria-label="Day type">${['normal', 'grace', 'rest'].map(s => `<button class="${status === s ? 'on' : ''}" data-act="setStatus" data-k="${k}" data-v="${s}">${s === 'normal' ? 'Attack' : s === 'grace' ? 'Grace' : 'Rest'}</button>`).join('')}</div>
+      <span class="small muted">${mins} min focused</span>
     </div>
-    <div class="stats">
-      <div class="stat"><div class="v">${done}/${ts.length}</div><div class="k">Done</div></div>
-      <div class="stat"><div class="v">${fmt1(dayAvg(k, 'pd'))}</div><div class="k">Avg PD</div></div>
-      <div class="stat"><div class="v">${fmt1(dayAvg(k, 'ad'))}</div><div class="k">Avg AD</div></div>
-      <div class="stat"><div class="v">${mins}<span class="small muted"> min</span></div><div class="k">Focused</div></div>
-    </div>
-    ${status !== 'normal' ? `<div class="hint ${status === 'rest' ? 'good' : ''}" style="margin-top:10px">${status === 'rest' ? 'Rest day. Recovery is part of the system and it won\'t break your streak.' : 'Grace day. Life happened. The streak is protected; do what you can.'}</div>` : ''}
-    </div>`;
-
+    ${status !== 'normal' ? `<div class="hint ${status === 'rest' ? 'good' : ''}" style="margin-top:12px">${status === 'rest' ? "Rest day. Recovery is part of the system and it won't break your streak." : 'Grace day. Life happened. The streak is protected; do what you can.'}</div>` : ''}
+  </div>`;
   dayHints(k).forEach(([c, m]) => { h += `<div class="hint ${c}" style="margin:8px 0">${esc(m)}</div>`; });
-  if (!ts.length && !(d.tasks || []).length) h += `<div class="empty">No tasks for this day yet.<br><span class="small">Tip: ${st.hardTasksTarget} tasks around ${st.targetDifficulty}/10, the rest easy or medium.</span></div>`;
-  (d.tasks || []).forEach((x, i) => { h += taskCard(k, x, i, 'today'); });
-  h += `<button class="add-task no-print" data-act="addTask" data-k="${k}">+ Add task</button>`;
-  h += `<div class="goal">Next day attack goal: <b>${st.targetDifficulty}/10</b></div>`;
-
-  if (st.showRulesOnToday) h += sec('rules', 'Company manual check-in', rulesCheckin(k), compBadge(k));
+  h += taskList(k, 'today', `No tasks yet. Aim for ${st.hardTasksTarget} tasks around ${st.targetDifficulty}/10, the rest easier.`);
+  if (k === t && ts.some(x => !x.done)) h += `<button class="btn primary block no-print" data-act="startFocus">${px('play', 11)} Start focus</button>`;
+  h += `<div class="goal"><span>Next day attack goal</span><b>${st.targetDifficulty}/10</b></div>`;
+  if (st.showRulesOnToday) h += sec('rules', 'Manual check-in', rulesCheckin(k), compBadge(k));
   if (st.showFactorsOnToday) h += sec('factors', 'Factors', factorsForm(k));
   if (st.showJournalOnToday) h += sec('journal', 'Feedback journal', journalForm(k));
+  if (!NATIVE) h += `<div class="row no-print" style="justify-content:flex-end"><button class="btn sm ghost" data-act="print">Print sheet</button></div>`;
   h += sheetForPrint(k);
   return h;
 };
-
 function compBadge(k) {
   const ids = S.rules.filter(r => r.active).map(r => r.id);
   const c = compliance([k], ids);
@@ -459,29 +517,33 @@ function sheetForPrint(k) {
 
 V.plan = () => {
   const st = S.settings, t = todayKey(), k = addDays(t, 1);
-  const d = getDay(k) || { tasks: [] };
+  const ts = activeTasks(k);
   const undone = activeTasks(t).filter(x => !x.done && x.what);
-  const rec = recurringTasks(k).filter(r => !activeTasks(k).some(x => normName(x.what) === normName(r.t.what)));
-  let h = `<div class="eyebrow">Build a tomorrow · ${esc(niceDate(k))}</div><h1 class="title">Plan <u>Tomorrow</u></h1>
-    <p class="muted">Plan tomorrow before today ends: exact tasks, amounts, times. Wake up with clarity, not decisions.</p>`;
-  h += `<div class="row no-print" style="margin:10px 0">
-    <button class="btn" data-act="carry" ${undone.length ? '' : 'disabled'}>Carry over unfinished (${undone.length})</button>
-    <button class="btn" data-act="repeatToday" ${activeTasks(t).length ? '' : 'disabled'}>Repeat today with 7/10 adjustments</button></div>`;
+  const rec = recurringTasks(k).filter(r => !ts.some(x => normName(x.what) === normName(r.t.what)));
+  const top = rec.find(r => r.s && r.s.action === 'up') || rec.find(r => r.s && r.s.action === 'down');
+  let h = `<div class="dayhead"><div><div class="eyebrow">Build a tomorrow</div><h1 class="title">Tomorrow</h1></div><span class="small muted">${esc(niceDate(k))}</span></div>
+    <p class="muted small">Plan it before today ends: exact tasks, amounts, times. Wake up with clarity, not decisions.</p>`;
+  h += `<div class="card ink"><div class="row between"><span class="h2">Balanced plan</span><span class="small muted">${ts.length}/${st.maxTasks} tasks</span></div>
+    <div style="margin-top:10px">${mixBar(ts)}</div></div>`;
+  if (top) {
+    const i = rec.indexOf(top);
+    h += `<div class="sugbar"><div class="t"><b>${top.s.action === 'up' ? `Make it ~${st.overloadStep}% harder` : 'Ease off a little'}</b><span class="small">${esc(top.t.what)}: ${esc(top.s.text)}</span></div><button class="btn sm primary" data-act="addSug" data-i="${i}">Add</button></div>`;
+  }
+  h += `<div class="row no-print">
+    <button class="btn sm" data-act="carry" ${undone.length ? '' : 'disabled'}>Carry over unfinished (${undone.length})</button>
+    <button class="btn sm" data-act="repeatToday" ${activeTasks(t).length ? '' : 'disabled'}>Repeat today, adjusted</button></div>`;
   dayHints(k).forEach(([c, m]) => { h += `<div class="hint ${c}" style="margin:8px 0">${esc(m)}</div>`; });
-  if (!d.tasks.length) h += `<div class="empty">Nothing planned for tomorrow yet.</div>`;
-  d.tasks.forEach((x, i) => { h += taskCard(k, x, i, 'plan'); });
-  h += `<button class="add-task" data-act="addTask" data-k="${k}">+ Add task for tomorrow</button>`;
-  h += `<div class="goal">Next day attack goal: <b>${st.targetDifficulty}/10</b></div>`;
+  h += taskList(k, 'plan', 'Nothing planned for tomorrow yet.');
+  h += `<div class="goal"><span>Next day attack goal</span><b>${st.targetDifficulty}/10</b></div>`;
   if (rec.length) {
-    h += sec('sugs', '7/10 suggestions', `<p class="small muted" style="margin-top:0">From your recent tasks. When the actual difficulty drops below ${st.targetDifficulty - st.tolerance}, add load. Above ${st.targetDifficulty + st.tolerance}, ease off.</p>` +
-      rec.map(({ t: x, s }, i) => `<div class="rule-row"><div class="t"><b>${esc(x.what)}</b><div class="small muted">${s ? esc(s.text) : 'No actual difficulty rated yet. Rate AD to get overload suggestions.'}</div></div>
-       <button class="btn sm" data-act="addSug" data-i="${i}">+ Add</button></div>`).join(''));
+    h += sec('sugs', '7/10 suggestions', `<p class="small muted" style="margin-top:0">From your recent tasks. Below ${st.targetDifficulty - st.tolerance}/10 actual difficulty, add load. Above ${st.targetDifficulty + st.tolerance}, ease off.</p>` +
+      rec.map(({ t: x, s }, i) => `<div class="rule-row"><div class="t"><b>${esc(x.what)}</b><div class="small muted">${s ? esc(s.text) : 'Rate actual difficulty to get overload suggestions.'}</div></div>
+       <button class="btn sm" data-act="addSug" data-i="${i}">Add</button></div>`).join(''));
   }
   const woops = S.woops.filter(w => w.active && (w.obstacle || w.plan));
   if (woops.length) h += sec('ifthen', 'Your if-then plans', woops.map(w => `<div class="rule-row"><div class="t"><b>${esc(w.wish)}</b><div class="small">If <i>${esc(w.obstacle)}</i>, then <i>${esc(w.plan)}</i>.</div></div></div>`).join(''));
   return h;
 };
-
 /* ---------- focus timer (30/10) ---------- */
 const T = { mode: 'work', running: false, endAt: 0, left: null, total: null, cycle: 1, taskKey: null, taskId: null, ask: false, reframe: null };
 function tSet(mode, min) { T.mode = mode; T.left = T.total = Math.max(1, Math.round(min * 60)); T.running = false; T.ask = false; nativeSchedule(); }
@@ -529,12 +591,12 @@ setInterval(() => {
   const disp = $('#tdisp');
   if (disp && T.left != null) {
     disp.textContent = mmss(T.left);
-    const c = $('#tring'); if (c) c.style.strokeDashoffset = String(CIRC * (1 - T.left / T.total));
+    const on = Math.floor((1 - T.left / T.total) * 30);
+    document.querySelectorAll('#tblocks i').forEach((el, i) => el.classList.toggle('on', i < on));
   }
   document.title = T.running ? `${mmss(T.left)} · ${T.mode === 'break' ? 'Break' : 'Focus'}` : (S.settings.appName || 'Attack Mode');
 }, 500);
 const mmss = s => `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
-const CIRC = 2 * Math.PI * 54;
 
 let actx;
 function unlockAudio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) { } }
@@ -564,74 +626,73 @@ V.focus = () => {
   if (T.left == null) tSet('work', tm.work);
   const task = T.taskId ? findTask(T.taskKey, T.taskId) : null;
   const ts = activeTasks(k).filter(t => !t.done);
+  const next = ts.find(t => t.id !== T.taskId);
   const today = S.sessions.filter(s => s.d === k);
-  const label = { work: 'Focus', break: 'Break', starter: 'Starter' }[T.mode];
-  let h = `<div class="eyebrow">30/10 system</div><h1 class="title">Focus <u>Mode</u></h1>`;
-  h += `<div class="card ink"><div class="timer">
-    <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="none" stroke="var(--surface2)" stroke-width="8"/>
-      <circle id="tring" cx="60" cy="60" r="54" fill="none" stroke="${T.mode === 'break' ? 'var(--good)' : 'var(--accent)'}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC * (1 - T.left / T.total)}"/></svg>
-      <div class="center"><div class="mode ${T.mode === 'break' ? 'break' : ''}">${label}${T.mode !== 'starter' ? ' · ' + T.cycle : ''}</div><div class="time" id="tdisp">${mmss(T.left)}</div>
-      <div class="small muted" style="max-width:70%">${esc(task ? task.what : '')}</div></div></div>
-    <p class="muted" style="text-align:center;max-width:460px">${esc(T.mode === 'break' ? tm.breakMsg : tm.workMsg)}</p>
-    <div class="row" style="justify-content:center">
-      ${T.running ? '<button class="btn primary" data-act="tPause">Pause</button>' : `<button class="btn primary" data-act="tStart">${T.left < T.total ? 'Resume' : 'Start'}</button>`}
-      <button class="btn" data-act="tReset">Reset</button>
-      <button class="btn" data-act="tSkip">Skip to ${T.mode === 'break' ? 'work' : 'break'}</button>
-    </div></div>`;
-  if (T.ask) h += `<div class="hint accent" style="margin-top:14px;flex-direction:column"><b>Starter done. Am I willing to continue?</b><div class="row"><button class="btn primary sm" data-act="tContinue">Yes, start a full ${tm.work}-min block</button><button class="btn sm" data-act="tStop">Not now, and that's okay</button></div></div>`;
-  h += `</div>`;
+  const label = { work: 'Deep work', break: 'Break', starter: 'Starter' }[T.mode];
+  let h = `<div class="eyebrow">30/10 system</div><h1 class="title">Focus</h1>`;
+  h += `<div class="card invert focus-card">
+    <div class="eyebrow">${label}${T.mode !== 'starter' ? ' · block ' + T.cycle : ''}</div>
+    <div class="task-name">${esc(task ? task.what : T.mode === 'break' ? 'Rest your eyes' : 'Pick a task below')}</div>
+    <div class="time" id="tdisp">${mmss(T.left)}</div>
+    <div class="mode ${T.mode === 'break' ? 'break' : ''}">${T.running ? (T.mode === 'break' ? 'On break' : 'In the zone') : 'Paused'}</div>
+    ${blocks(30, Math.floor((1 - T.left / T.total) * 30), 'on', 'tblocks')}
+    <p class="msg muted">${esc(T.mode === 'break' ? tm.breakMsg : tm.workMsg)}</p>
+    <div class="ctrls">
+      <button class="side" data-act="tPlus5" aria-label="Add 5 minutes"><b>+5</b>min</button>
+      <button class="main" data-act="tToggle" aria-label="${T.running ? 'Pause' : 'Start'}">${px(T.running ? 'pause' : 'play', 28)}</button>
+      <button class="side" data-act="tSkip" aria-label="Skip to ${T.mode === 'break' ? 'work' : 'break'}"><b>&gt;&gt;</b>skip</button>
+    </div>
+    ${T.left < T.total ? '<button class="btn sm ghost" data-act="tReset" style="margin-top:14px;color:var(--inv-muted)">Reset</button>' : ''}
+  </div>`;
+  if (T.ask) h += `<div class="hint accent" style="flex-direction:column"><b>Starter done. Am I willing to continue?</b><div class="row"><button class="btn primary sm" data-act="tContinue">Yes, full ${tm.work}-min block</button><button class="btn sm" data-act="tStop">Not now, that's okay</button></div></div>`;
 
-  h += `<div class="card"><h2>Work on</h2><div class="row" style="margin-top:8px">
-     <select data-act-change="pickFocusTask" style="flex:1;min-width:200px"><option value="">No specific task</option>${ts.map(t => `<option value="${t.id}" ${T.taskId === t.id ? 'selected' : ''}>${esc(t.what || 'Untitled')}</option>`).join('')}</select></div>
-     <div class="row" style="margin-top:10px">
-       <button class="btn" data-act="tStarter" data-m="${tm.starterG0}">Grade 0 · ${tm.starterG0}-min start</button>
-       <button class="btn" data-act="tStarter" data-m="${tm.starterG1}">Grade 1 · ${tm.starterG1}-min start</button>
-     </div><p class="small muted">Can't start? Do the tiny version. No pressure to do more. Stress feeds procrastination.</p></div>`;
-
-  h += `<div class="card"><div class="row between"><h2>Mind wandering?</h2><button class="btn sm" data-act="reframe">Reframe</button></div>`;
+  h += `<button class="linkrow" data-act="reframe"><span class="t"><b>Mind wandering?</b><span class="small muted">Reframe the task and get back on track.</span></span>${px('chev', 7)}</button>`;
   if (T.reframe != null) {
-    const q = S.settings.reframePrompts[T.reframe] || '';
-    const why = S.settings.myWhy;
+    const q = S.settings.reframePrompts[T.reframe] || '', why = S.settings.myWhy;
     const woops = S.woops.filter(w => w.active && w.wish);
     const subj = task ? task.what : 'what I am studying';
-    h += `<div class="reframe" style="margin-top:10px"><div class="eyebrow">Cognitive reframing</div><p class="q">${esc(q)}</p>
+    h += `<div class="reframe"><div class="eyebrow">Cognitive reframing</div><p class="q">${esc(q)}</p>
       ${why ? `<p><b>My why:</b> ${esc(why)}</p>` : '<p class="small muted">Add your personal "why" in Settings and it shows up here.</p>'}
       ${woops.length ? `<p class="small"><b>Wishes:</b> ${woops.map(w => esc(w.wish)).join(' · ')}</p>` : ''}
-      <p class="small muted">Ask a chatbot: <span class="kbd" id="aiprompt">What are the real-life implications of ${esc(subj)}, and how can I apply it?</span> <button class="btn sm" data-act="copyAi">Copy</button></p>
-      <button class="btn sm" data-act="reframe">Another prompt</button></div>`;
-  } else h += `<p class="small muted">Attention drifting is vigilance decrement, not failure. Tap Reframe to reconnect with why this matters.</p>`;
-  h += `</div>`;
+      <p class="small muted">Ask a chatbot: <span class="kbd" id="aiprompt">What are the real-life implications of ${esc(subj)}, and how can I apply it?</span></p>
+      <div class="row"><button class="btn sm" data-act="copyAi">Copy question</button><button class="btn sm" data-act="reframe">Another prompt</button></div></div>`;
+  }
+  if (next) h += `<button class="linkrow" data-act="focusTask" data-k="${k}" data-id="${next.id}"><span class="t"><span class="eyebrow">Next up</span><b>${esc(next.what || 'Untitled')}</b><span class="small muted">${esc([next.when, next.qty != null ? next.qty + ' ' + (next.unit || '') : ''].filter(Boolean).join(' · '))}</span></span>${kindOf(next) ? `<span class="tag ${kindOf(next)}">${kindOf(next)}</span>` : ''}</button>`;
 
+  h += `<div class="card"><h2>Work on</h2>
+     <select data-act-change="pickFocusTask" style="margin-top:10px" aria-label="Task to focus on"><option value="">No specific task</option>${ts.map(t => `<option value="${t.id}" ${T.taskId === t.id ? 'selected' : ''}>${esc(t.what || 'Untitled')}</option>`).join('')}</select>
+     <div class="row" style="margin-top:10px">
+       <button class="btn sm" data-act="tStarter" data-m="${tm.starterG0}">Grade 0 · ${tm.starterG0} min</button>
+       <button class="btn sm" data-act="tStarter" data-m="${tm.starterG1}">Grade 1 · ${tm.starterG1} min</button>
+     </div><p class="small muted">Can't start? Do the tiny version. No pressure to do more.</p></div>`;
   const workMin = today.filter(s => s.type !== 'break').reduce((a, s) => a + s.m, 0);
-  h += `<div class="card"><h2>Today's sessions</h2><p>${today.length} block${today.length === 1 ? '' : 's'} · <b>${workMin} min</b> focused</p>
-    ${today.length ? `<div class="small muted">${today.slice(-12).map(s => `${s.m} min${s.task ? ' · ' + esc(s.task) : ''}${s.type === 'starter' ? ' (starter)' : ''}`).join('<br>')}</div>` : ''}
+  h += `<div class="card"><div class="row between"><h2>Today</h2><span class="pixel">${workMin} min</span></div>
+    <p class="small muted" style="margin:6px 0 0">${today.length} block${today.length === 1 ? '' : 's'}${today.length ? ': ' + today.slice(-8).map(s => `${s.m}m${s.task ? ' ' + esc(s.task) : ''}`).join(' · ') : ''}</p>
     <div class="grid g4" style="margin-top:12px">
-      <label class="f"><span>Work min</span>${inp('set|timer.work', tm.work, 'type="number" min="1"')}</label>
-      <label class="f"><span>Break min</span>${inp('set|timer.brk', tm.brk, 'type="number" min="1"')}</label>
-      <label class="f"><span>Long break every</span>${inp('set|timer.longEvery', tm.longEvery, 'type="number" min="0" title="0 = never"')}</label>
-      <label class="f"><span>Long break min</span>${inp('set|timer.longBrk', tm.longBrk, 'type="number" min="1"')}</label>
-    </div><p class="small muted">Changes apply to the next block. More timer options in Settings.</p></div>`;
+      <label class="f"><span>Work</span>${inp('set|timer.work', tm.work, 'type="number" min="1"')}</label>
+      <label class="f"><span>Break</span>${inp('set|timer.brk', tm.brk, 'type="number" min="1"')}</label>
+      <label class="f"><span>Long every</span>${inp('set|timer.longEvery', tm.longEvery, 'type="number" min="0" title="0 = never"')}</label>
+      <label class="f"><span>Long break</span>${inp('set|timer.longBrk', tm.longBrk, 'type="number" min="1"')}</label>
+    </div></div>`;
   return h;
 };
 
 /* ---------- WOOP ---------- */
 V.woop = () => {
-  let h = `<div class="eyebrow">MCII · mental contrasting with implementation intentions</div><h1 class="title"><u>WOOP</u> Planner</h1>
-    <p class="muted">Wish → Outcome → Obstacle → Plan. Visualize the obstacle and decide in advance what you will do when it shows up.</p>
-    <button class="btn primary" data-act="addWoop">+ New WOOP</button>`;
-  if (!S.woops.length) h += `<div class="empty">No WOOPs yet.<br><span class="small">Example: Wish: read 10 chapters · Outcome: pass the exam · Obstacle: I start gaming · Plan: if I feel the urge to game, I put the controller in another room and read 1 page.</span></div>`;
+  let h = `<div class="dayhead"><div><div class="eyebrow">Clarity creates execution</div><h1 class="title">WOOP</h1></div></div>
+    <p class="muted small">Wish, Outcome, Obstacle, Plan. Picture the obstacle and decide now what you'll do when it shows up.</p>
+    <button class="btn primary" data-act="addWoop">${px('plus', 9)} New WOOP</button>`;
+  if (!S.woops.length) h += `<div class="empty">No WOOPs yet.<br><span class="small">Example: read 10 chapters · pass the exam · I start gaming · if I feel the urge, the controller goes in another room and I read 1 page.</span></div>`;
+  const steps = [['wish', 'Wish', 'What do I really want?', 'Read 10 chapters this month'], ['outcome', 'Outcome', 'What would it look like?', 'I pass the exam with room to spare'], ['obstacle', 'Obstacle', 'What inside me gets in the way?', 'I start gaming instead of studying'], ['plan', 'Plan', 'If the obstacle shows up, then I will…', 'put the controller in another room and read 1 page']];
   S.woops.slice().reverse().forEach(w => {
     const p = `woop|${w.id}|`;
-    h += `<div class="card woop ${w.active ? 'ink' : ''}"><div class="woop-grid">
-      <span class="letter">W</span><label class="f"><span>Wish: what I want to achieve</span>${inp(p + 'wish', w.wish, 'placeholder="I want to read 10 chapters"')}</label>
-      <span class="letter">O</span><label class="f"><span>Outcome: the best result</span>${inp(p + 'outcome', w.outcome, 'placeholder="I will pass the exam"')}</label>
-      <span class="letter">O</span><label class="f"><span>Obstacle: what inside me gets in the way</span>${inp(p + 'obstacle', w.obstacle, 'placeholder="I start gaming instead of studying"')}</label>
-      <span class="letter">P</span><label class="f"><span>Plan: if (obstacle), then I will…</span><textarea data-bind="${p}plan" placeholder="put the controller in another room and read 1 page">${esc(w.plan)}</textarea></label>
-    </div><div class="row" style="margin-top:10px">
-      <label class="row small"><input type="checkbox" data-bind="${p}active" data-rr ${w.active ? 'checked' : ''}> Active</label>
-      <button class="btn sm" data-act="visualize" data-id="${w.id}">Visualize</button>
-      <button class="btn sm" data-act="woopTask" data-id="${w.id}">Make tomorrow's task</button>
-      <span style="flex:1"></span><button class="btn sm danger" data-act="delWoop" data-id="${w.id}">Delete</button></div></div>`;
+    h += `<div class="card ${w.active ? 'ink' : ''}"><div class="woop-steps">${steps.map(([f, t, q, ph], i) => `<div class="wstep ${w[f] ? 'filled' : ''}"><span class="n">${i + 1}</span><div style="min-width:0"><h3>${t}</h3><div class="q">${q}</div>
+        ${f === 'plan' ? `<textarea data-bind="${p}plan" placeholder="${esc(ph)}" aria-label="${t}">${esc(w.plan)}</textarea>` : inp(p + f, w[f], `placeholder="${esc(ph)}" aria-label="${t}"`)}</div></div>`).join('')}</div>
+      <div class="row" style="margin-top:14px">
+        <label class="row small"><input type="checkbox" data-bind="${p}active" data-rr ${w.active ? 'checked' : ''}> Active</label>
+        <button class="btn sm" data-act="visualize" data-id="${w.id}">Visualize</button>
+        <button class="btn sm" data-act="woopTask" data-id="${w.id}">Make tomorrow's task</button>
+        <span style="flex:1"></span><button class="btn sm danger" data-act="delWoop" data-id="${w.id}">Delete</button></div></div>`;
   });
   return h;
 };
@@ -724,14 +785,14 @@ function chart(keys) {
   const pts = [];
   keys.forEach((k, i) => {
     const c = dayCompletion(k), x = L + i * bw, st = dayStatus(k);
-    if (c != null) { const bh = Math.max(2, ih * c / 100); s += `<rect x="${x + bw * 0.18}" y="${Tp + ih - bh}" width="${bw * 0.64}" height="${bh}" rx="2" fill="var(--accent)" opacity=".85"><title>${k}: ${Math.round(c)}%</title></rect>`; }
+    if (c != null) { const bh = Math.max(2, ih * c / 100); s += `<rect x="${x + bw * 0.18}" y="${Tp + ih - bh}" width="${bw * 0.64}" height="${bh}" fill="var(--accent)"><title>${k}: ${Math.round(c)}%</title></rect>`; }
     else if (st === 'rest' || st === 'grace') s += `<text x="${x + bw / 2}" y="${Tp + ih - 4}" font-size="9" text-anchor="middle" fill="var(--muted)">${st === 'rest' ? 'R' : 'G'}</text>`;
     const a = dayAvg(k, 'ad'); if (a != null) pts.push([x + bw / 2, Tp + ih - ih * a / 10]);
     const step = Math.ceil(keys.length / 10);
     if (i % step === 0) s += `<text x="${x + bw / 2}" y="${H - 6}" font-size="10" text-anchor="middle" fill="var(--muted)">${parseKey(k).getDate()}</text>`;
   });
-  if (pts.length > 1) s += `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="var(--ink)" stroke-width="2"/>`;
-  pts.forEach(p => { s += `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--ink)"/>`; });
+  if (pts.length > 1) s += `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="var(--ink)" stroke-width="2" shape-rendering="geometricPrecision"/>`;
+  pts.forEach(p => { s += `<rect x="${p[0] - 3}" y="${p[1] - 3}" width="6" height="6" fill="var(--ink)"/>`; });
   return s + '</svg>';
 }
 
@@ -779,7 +840,7 @@ V.settings = () => {
       <label class="f"><span>Week starts on</span><select data-bind="set|weekStart" data-num data-rr>${DOW.map((d, i) => `<option value="${i}" ${+st.weekStart === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
     </div>
     <label class="f" style="margin-top:10px"><span>My why (shown when reframing)</span><textarea data-bind="set|myWhy" placeholder="Who or what you are doing this for">${esc(st.myWhy)}</textarea></label>
-    <div class="stack" style="margin-top:10px">${check('Show a principle on the Today page', 'set|showPrinciple', st.showPrinciple)}${check('Show rules check-in on Today', 'set|showRulesOnToday', st.showRulesOnToday)}${check('Show factors on Today', 'set|showFactorsOnToday', st.showFactorsOnToday)}${check('Show feedback journal on Today', 'set|showJournalOnToday', st.showJournalOnToday)}</div>`);
+    <div class="stack" style="margin-top:10px">${check('Show a principle on the Today page', 'set|showPrinciple', st.showPrinciple)}${check('Show rules check-in on Today', 'set|showRulesOnToday', st.showRulesOnToday)}${check('Show factors on Today', 'set|showFactorsOnToday', st.showFactorsOnToday)}${check('Show feedback journal on Today', 'set|showJournalOnToday', st.showJournalOnToday)}${check('Show the loading screen', 'set|showSplash', st.showSplash)}</div>`);
   h += sec('s-710', '7/10 system & daily plan', `<div class="grid g3">
       ${field('Target difficulty (/10)', 'set|targetDifficulty', st.targetDifficulty, 'type="number" min="1" max="10"')}
       ${field('Hard tasks per day', 'set|hardTasksTarget', st.hardTasksTarget, 'type="number" min="0" max="10"')}
@@ -815,6 +876,7 @@ V.settings = () => {
     + `<button class="btn sm" data-act="fAdd">+ Add factor</button>`);
   h += sec('s-journal', 'Journal prompts', listEditor('journalPrompts', 'Prompt', 'Questions for your daily feedback journal (metacognition).'));
   h += sec('s-reframe', 'Reframing prompts', listEditor('reframePrompts', 'Prompt', 'Shown when your mind wanders during a focus block.'));
+  h += sec('s-loading', 'Loading screen lines', listEditor('loadingLines', 'Line', 'One is picked at random each time the app opens.'));
   h += sec('s-principles', 'Principles', listEditor('principles', 'Principle', 'One rotates onto the Today page each day.'));
   h += sec('s-manual', 'Company manual', `<div class="grid g2">${field('Compliance target %', 'set|complianceTarget', st.complianceTarget, 'type="number" min="1" max="100"')}${field('Regression alert: weekly drop of (pts)', 'set|regressionDrop', st.regressionDrop, 'type="number" min="1" max="100"')}</div>
       <div style="margin-top:10px">${check('Skip rule tracking on rest days', 'set|restSkipsRules', st.restSkipsRules)}</div>`);
@@ -912,9 +974,13 @@ const ACT = {
     const v = +el.dataset.v; t[f] = t[f] === v ? null : v; save(); render();
   },
   addTask(el) {
-    const k = el.dataset.k; const d = getDay(k, true); d.tasks.push(newTask()); save(); render();
-    const inputs = document.querySelectorAll('.task .what'); inputs[inputs.length - 1]?.focus();
+    const k = el.dataset.k, t = newTask(); getDay(k, true).tasks.push(t); openTask.add(t.id); save(); render();
+    document.querySelector(`.editor[data-id="${t.id}"] .what`)?.focus();
   },
+  toggleTask(el) { const id = el.dataset.id; openTask.has(id) ? openTask.delete(id) : openTask.add(id); render(); },
+  startFocus() { const k = todayKey(), t = activeTasks(k).find(x => !x.done); if (t) ACT.focusTask({ dataset: { k, id: t.id } }); else go('focus'); },
+  tToggle() { T.running ? tPause() : tStart(); render(); },
+  tPlus5() { if (T.left == null) return; T.left += 300; T.total += 300; if (T.running) T.endAt += 300000; nativeSchedule(); render(); },
   delTask: async el => { if (!(await confirmBox('Delete this task?', 'Delete', 'danger'))) return; const d = S.days[el.dataset.k]; d.tasks = d.tasks.filter(t => t.id !== el.dataset.id); save(); render(); },
   dupTask(el) { const d = S.days[el.dataset.k]; const i = d.tasks.findIndex(t => t.id === el.dataset.id); d.tasks.splice(i + 1, 0, newTask({ ...d.tasks[i], id: uid(), done: false, ad: null, movedTo: undefined })); save(); render(); },
   mvTask(el) { const d = S.days[el.dataset.k]; moveIn(d.tasks, d.tasks.findIndex(t => t.id === el.dataset.id), +el.dataset.dir); save(); render(); },
@@ -1026,16 +1092,37 @@ const ACT = {
   resetSettings: async () => { if (!(await confirmBox('Reset all settings (prompts, factors, timer, labels) to defaults? Your tasks, rules and journal stay.', 'Reset'))) return; S.settings = defaultSettings(); save(); applyTheme(); render(); },
   wipe: async () => { if (!(await confirmBox('Erase ALL data on this device? Export a backup first if you want to keep it.', 'Erase everything', 'danger'))) return; S = fresh(); save(); applyTheme(); go('attack'); },
 };
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('trow')) { e.preventDefault(); ACT.toggleTask(e.target); }
+});
 document.addEventListener('click', e => {
+  if (e.target.closest('label.check')) return;
   const a = e.target.closest('[data-act]');
   if (a && ACT[a.dataset.act]) { ACT[a.dataset.act](a, e); return; }
   const n = e.target.closest('[data-nav]');
   if (n) { e.preventDefault(); go(n.dataset.nav); }
 });
 
-/* ---------- boot ---------- */
-applyTheme();
-go(location.hash.slice(1) || S.ui.view || 'attack');
+/* ---------- boot + loading screen ---------- */
+function boot() {
+  applyTheme();
+  const sp = $('#splash'), first = location.hash.slice(1) || S.ui.view || 'attack';
+  if (!sp) return go(first);
+  if (S.settings.showSplash === false) { sp.remove(); return go(first); }
+  const lines = (S.settings.loadingLines || []).filter(Boolean);
+  $('#splashLine').textContent = lines.length ? lines[Math.floor(Math.random() * lines.length)] : '';
+  const cells = sp.querySelectorAll('.blocks i'), pctEl = $('#splashPct');
+  const setP = p => { cells.forEach((c, i) => c.classList.toggle('on', i < Math.round(p / 100 * cells.length))); pctEl.textContent = p + '%'; };
+  // each step is real work; the short pauses let the bar read as progress
+  const steps = [[20, () => streak()], [45, () => regression()], [70, () => recurringTasks(addDays(todayKey(), 1))], [100, () => go(first)]];
+  let i = 0;
+  const run = () => {
+    if (i >= steps.length) { setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 300); }, 180); return; }
+    const [p, fn] = steps[i++]; try { fn(); } catch (e) { console.warn(e); } setP(p); setTimeout(run, 160);
+  };
+  setP(0); setTimeout(run, 120);
+}
+boot();
 // re-render when the day rolls over or the app comes back into view
 let lastDay = todayKey();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && todayKey() !== lastDay) { lastDay = todayKey(); if (S.ui.view !== 'focus') render(); } });
