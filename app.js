@@ -241,6 +241,8 @@ const STYLES = [
   { id: 'bw', name: 'Pixel B&W', note: 'Black and white only, notched pixels.', sw: ['#000000', '#6b6b6b', '#e4e4e4', '#ffffff'] },
   { id: 'simplified', name: 'Simplified', note: 'Flat and quiet. One accent, hairlines only.', sw: ['#f4f1ea', '#fffdf8', '#d8d1c2', '#151412'] },
   { id: 'studio', name: 'Studio', layout: 'rail', fixedAccent: true, note: 'Sidebar dashboard. Pastel, pill buttons, two columns.', sw: ['#f6f5fb', '#ffffff', '#6c5ce7', '#23213a'] },
+  { id: 'terminal', name: 'Terminal', layout: 'term', fixedAccent: true, note: 'Command line. Type to move, green on black.', sw: ['#050805', '#0d140e', '#5cff8f', '#ffb02e'] },
+  { id: 'timeline', name: 'Timeline', layout: 'timeline', fixedAccent: true, note: 'Your day by the hour. Bold colour blocks, + button.', sw: ['#fffaf0', '#ff6b35', '#2a4bff', '#00b37e'] },
   { id: 'gamified', name: 'Gamified', note: 'Dark, round and bold. Three colours, mission cards.', sw: ['#0b0b0f', '#1b1b1f', '#ff4a1c', '#f4f3ef'] },
 ];
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -325,7 +327,7 @@ const LINE = {
   plus: '<path d="M12 5v14M5 12h14"/>',
 };
 function px(name, size = 18) {
-  if (['refresh', 'simplified', 'gamified', 'studio'].includes(S.settings.style) && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
+  if (['refresh', 'simplified', 'gamified', 'studio', 'timeline'].includes(S.settings.style) && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
   const rows = PX[name]; if (!rows) return '';
   const h = rows.length, w = rows[0].length, fills = { '#': 'currentColor', a: 'var(--accent)', c: '#f4f1ea' };
   let r = '';
@@ -368,10 +370,12 @@ function levelUp(n) {
 }
 
 /* ---------- nav ---------- */
+const navTabs = () => S.settings.tabs.filter(t => t.visible || t.id === 'settings');
 function renderNav() {
   const v = S.ui.view;
-  $('#nav').innerHTML = S.settings.tabs.filter(t => t.visible || t.id === 'settings').map(t =>
-    `<a href="#${t.id}" class="${v === t.id ? 'on' : ''}" data-nav="${t.id}">${px(t.id === 'attack' ? 'today' : t.id, 18)}<span>${esc(t.label)}</span></a>`).join('');
+  const term = layout() === 'term';
+  $('#nav').innerHTML = navTabs().map((t, i) =>
+    `<a href="#${t.id}" class="${v === t.id ? 'on' : ''}" data-nav="${t.id}">${term ? `<span>${i + 1}:${esc(t.label.toLowerCase())}</span>` : `${px(t.id === 'attack' ? 'today' : t.id, 18)}<span>${esc(t.label)}</span>`}</a>`).join('');
   const name = S.settings.appName || 'Aware Mode';
   const parts = name.split(' ');
   const word = parts.length > 1 ? `${esc(parts.slice(0, -1).join(' '))} <b>${esc(parts.at(-1))}</b>` : `<b>${esc(name)}</b>`;
@@ -1030,6 +1034,96 @@ LV.rail = {
     </aside></div>`;
   },
 };
+
+/* ---------- Terminal (term layout): a status line on top, a command line at the bottom ---------- */
+LV.term = {
+  attack() {
+    const k = todayKey(), ts = activeTasks(k), done = ts.filter(t => t.done).length, s = streak();
+    const load = dayAvg(k, 'ad') ?? dayAvg(k, 'pd');
+    return `<pre class="tline">aware@mode:~$ status
+tasks ${done}/${ts.length} done   load ${fmt1(load)}/10   streak ${s.n}d   ${esc(niceDate(k, { weekday: 'short', day: 'numeric', month: 'short' }))}</pre>
+<pre class="tline muted">${ts.map((t, i) => `${String(i + 1).padStart(2)}  [${t.done ? 'x' : ' '}] ${esc(t.what || 'untitled')}${kindOf(t) ? '  #' + kindOf(t) : ''}`).join('\n') || '    no tasks. try: add Read 20 pages'}</pre>` + V.attack();
+  },
+};
+/* ---------- Timeline layout: Today as one vertical line by hour ---------- */
+LV.timeline = {
+  attack() {
+    const st = S.settings, t = todayKey(), k = S.ui.date || t;
+    const d = S.days[k] || { tasks: [] }, ts = activeTasks(k), done = ts.filter(x => x.done).length;
+    const now = new Date(), nowM = now.getHours() * 60 + now.getMinutes();
+    const mins = x => { const m = /^(\d{1,2}):(\d{2})/.exec(x.when || ''); return m ? +m[1] * 60 + +m[2] : null; };
+    const items = d.tasks.map((x, i) => ({ x, i, m: mins(x) }));
+    const anytime = items.filter(o => o.m == null), timed = items.filter(o => o.m != null).sort((a, b) => a.m - b.m);
+    let nowPlaced = k !== t, rows = '';
+    const node = o => `<li class="tl-item ${o.x.done ? 'is-done' : ''}"><span class="tl-time">${o.m == null ? '' : esc(o.x.when)}</span><span class="tl-dot"></span><div class="tl-body">${taskRow(k, o.x, o.i, 'today')}</div></li>`;
+    for (const o of timed) {
+      if (!nowPlaced && o.m > nowM) { rows += `<li class="tl-now"><span class="tl-time">${pad(now.getHours())}:${pad(now.getMinutes())}</span><span class="tl-dot"></span><b>Now</b></li>`; nowPlaced = true; }
+      rows += node(o);
+    }
+    if (!nowPlaced) rows += `<li class="tl-now"><span class="tl-time">${pad(now.getHours())}:${pad(now.getMinutes())}</span><span class="tl-dot"></span><b>Now</b></li>`;
+    let h = `<div class="tl-head"><div><div class="eyebrow">${esc(niceDate(k, { weekday: 'long', day: 'numeric', month: 'long' }))}</div><h1 class="title">${k === t ? 'Your day' : 'That day'}</h1></div>
+      <div class="tl-score"><b>${done}</b>/${ts.length}</div></div>
+      <div class="datenav no-print"><button class="icon-btn" data-act="shiftDate" data-n="-1" aria-label="Previous day">&lt;</button><input type="date" value="${k}" data-act-change="pickDate" aria-label="Pick date"><button class="icon-btn" data-act="shiftDate" data-n="1" aria-label="Next day">&gt;</button>${k !== t ? '<button class="btn sm" data-act="goToday">Today</button>' : ''}<button class="btn sm" data-act="goHistory">History</button></div>
+      <div class="tl-bar"><i style="width:${ts.length ? done / ts.length * 100 : 0}%"></i></div>`;
+    dayHints(k).forEach(([c, m]) => { h += `<div class="hint ${c}" style="margin:8px 0">${esc(m)}</div>`; });
+    if (anytime.length) h += `<div class="eyebrow tl-label">Anytime</div><ul class="timeline tasks">${anytime.map(node).join('')}</ul>`;
+    h += `<div class="eyebrow tl-label">By the hour</div><ul class="timeline tasks">${rows}</ul>`;
+    if (!d.tasks.length) h += `<p class="muted">Nothing planned yet. Tap + to add a task, and give it a time to place it on the line.</p>`;
+    h += `<div class="goal"><span>Next day attack goal</span><b>${st.targetDifficulty}/10</b></div>`;
+    if (st.showRulesOnToday) h += sec('rules', 'Manual check-in', rulesCheckin(k), compBadge(k));
+    if (st.showFactorsOnToday) h += sec('factors', 'Factors', factorsForm(k));
+    if (st.showJournalOnToday) h += sec('journal', 'Feedback journal', journalForm(k));
+    h += `<button class="fab no-print" data-act="addTask" data-k="${k}" aria-label="Add task">${px('plus', 20)}</button>`;
+    return h + sheetForPrint(k);
+  },
+};
+
+const CMD_HELP = 'today | tomorrow | focus | woop | manual | insights | history | settings | 1-8 | add <task> | done <n> | start | pause | reset | style <name> | help';
+function runCmd(raw) {
+  const [c0, ...rest] = raw.trim().split(/\s+/), c = (c0 || '').toLowerCase(), arg = rest.join(' ');
+  const views = { today: 'attack', t: 'attack', tomorrow: 'plan', plan: 'plan', focus: 'focus', f: 'focus', woop: 'woop', manual: 'manual', insights: 'insights', history: 'history', settings: 'settings' };
+  const tabs = navTabs();
+  if (!c) return '';
+  if (views[c]) { go(views[c]); return 'opened ' + c; }
+  if (/^\d+$/.test(c) && tabs[+c - 1]) { go(tabs[+c - 1].id); return 'opened ' + tabs[+c - 1].label.toLowerCase(); }
+  if (c === 'help' || c === '?') return CMD_HELP;
+  if (c === 'add') {
+    if (!arg) return 'usage: add <task>';
+    const k = S.ui.view === 'plan' ? addDays(todayKey(), 1) : todayKey();
+    getDay(k, true).tasks.push(newTask({ what: arg })); save(); render();
+    return `added to ${S.ui.view === 'plan' ? 'tomorrow' : 'today'}: ${arg}`;
+  }
+  if (c === 'done' || c === 'undo') {
+    const t = activeTasks(todayKey())[+arg - 1];
+    if (!t) return 'no task ' + (arg || '?') + '. numbers are on the today screen';
+    t.done = c === 'done' ? !t.done : false; save(); render();
+    return `${t.done ? 'done' : 'not done'}: ${t.what || 'untitled'}`;
+  }
+  if (c === 'start') { ACT.startFocus(); if (!T.running) ACT.tToggle(); return 'timer running'; }
+  if (c === 'pause') { if (T.running) ACT.tToggle(); return 'timer paused'; }
+  if (c === 'reset') { ACT.tReset(); return 'timer reset'; }
+  if (c === 'style') {
+    const st = STYLES.find(x => x.id === arg.toLowerCase() || x.name.toLowerCase() === arg.toLowerCase());
+    if (!st) return 'styles: ' + STYLES.map(x => x.id).join(' ');
+    ACT.setStyle({ dataset: { v: st.id } }); return 'style ' + st.id;
+  }
+  if (c === 'clear') return '';
+  return `unknown command: ${c}. type help`;
+}
+document.addEventListener('submit', e => {
+  if (e.target.id !== 'cmd') return;
+  e.preventDefault();
+  const i = e.target.querySelector('input'), out = $('#cmdout');
+  out.textContent = runCmd(i.value); i.value = '';
+});
+document.addEventListener('keydown', e => {
+  if (layout() !== 'term' || e.ctrlKey || e.metaKey || e.altKey) return;
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  const tabs = navTabs();
+  if (/^[1-9]$/.test(e.key) && tabs[+e.key - 1]) { e.preventDefault(); go(tabs[+e.key - 1].id); }
+  else if (e.key === '/' || e.key === ':') { e.preventDefault(); $('#cmd input')?.focus(); }
+});
 
 /* ---------- render + routing ---------- */
 const layout = () => document.documentElement.dataset.layout || 'tabs';
