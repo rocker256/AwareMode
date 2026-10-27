@@ -239,6 +239,7 @@ const STYLES = [
   { id: 'pixel', name: 'Pixel', note: 'Ink, cream, orange. Pixel headings.', sw: ['#151412', '#f4f1ea', '#e4572e', '#2f8f5b'] },
   { id: 'refresh', name: 'Refresh', note: 'Clean sans, italic titles, soft cards.', sw: ['#f4f1ea', '#fffdf8', '#e4572e', '#c2362b'] },
   { id: 'bw', name: 'Pixel B&W', note: 'Black and white only, notched pixels.', sw: ['#000000', '#6b6b6b', '#e4e4e4', '#ffffff'] },
+  { id: 'simplified', name: 'Simplified', note: 'Flat and quiet. One accent, hairlines only.', sw: ['#f4f1ea', '#fffdf8', '#d8d1c2', '#151412'] },
 ];
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
 function applyTheme() {
@@ -318,7 +319,7 @@ const LINE = {
   plus: '<path d="M12 5v14M5 12h14"/>',
 };
 function px(name, size = 18) {
-  if (S.settings.style === 'refresh' && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
+  if ((S.settings.style === 'refresh' || S.settings.style === 'simplified') && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
   const rows = PX[name]; if (!rows) return '';
   const h = rows.length, w = rows[0].length, fills = { '#': 'currentColor', a: 'var(--accent)', c: '#f4f1ea' };
   let r = '';
@@ -626,6 +627,7 @@ setInterval(() => {
     disp.textContent = mmss(T.left);
     const on = Math.floor((1 - T.left / T.total) * 30);
     document.querySelectorAll('#tblocks i').forEach((el, i) => el.classList.toggle('on', i < on));
+    disp.closest('.focus-card')?.style.setProperty('--p', Math.round((1 - T.left / T.total) * 100));
   }
   document.title = T.running ? `${mmss(T.left)} · ${T.mode === 'break' ? 'Break' : 'Focus'}` : (S.settings.appName || 'Aware Mode');
 }, 500);
@@ -663,7 +665,7 @@ V.focus = () => {
   const today = S.sessions.filter(s => s.d === k);
   const label = { work: 'Deep work', break: 'Break', starter: 'Starter' }[T.mode];
   let h = `<div class="eyebrow">30/10 system</div><h1 class="title">Focus</h1>`;
-  h += `<div class="card invert focus-card">
+  h += `<div class="card invert focus-card" style="--p:${Math.round((1 - T.left / T.total) * 100)}">
     <div class="eyebrow">${label}${T.mode !== 'starter' ? ' · block ' + T.cycle : ''}</div>
     <div class="task-name">${esc(task ? task.what : T.mode === 'break' ? 'Rest your eyes' : 'Pick a task below')}</div>
     <div class="time" id="tdisp">${mmss(T.left)}</div>

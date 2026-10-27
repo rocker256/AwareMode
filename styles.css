@@ -31,7 +31,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-:root:not([data-style="refresh"]) *{border-radius:0!important}
+:root:not([data-style="refresh"]):not([data-style="simplified"]) *{border-radius:0!important}
 [hidden]{display:none!important}
 html{font-size:var(--fs);-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--body);padding-bottom:calc(72px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
@@ -331,66 +331,66 @@ table.data td{padding:8px 6px;border-bottom:var(--px) solid var(--line);vertical
   --bg:#111110; --surface:#1b1a18; --surface2:#242320; --ink:#f1ede4; --muted:#8c867b; --line:#2a2825; --line-strong:#302e2a;
   --good:#4bb47c; --warn:#e0a52c; --bad:#e85b4e; --hard:#e85b4e; --medium:#e0a52c; --easy:#4bb47c;
 }
-[data-style="refresh"] body{font-size:15px;line-height:1.5}
-[data-style="refresh"] .title{font-weight:900;font-style:italic;letter-spacing:-.01em;font-size:2rem}
-[data-style="refresh"] .title::after{display:none}
-[data-style="refresh"] .eyebrow{font-weight:600;font-size:.66rem;letter-spacing:.14em}
-[data-style="refresh"] .brand{font-style:italic;font-weight:900;letter-spacing:0}
-[data-style="refresh"] .top{border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(10px)}
-[data-style="refresh"] .pill{border:1px solid var(--line-strong);border-radius:99px;font-weight:600;font-size:.78rem;padding:3px 10px}
-[data-style="refresh"] nav#nav{border-top:1px solid var(--line);background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px)}
-[data-style="refresh"] nav#nav a{font-size:.6rem;letter-spacing:.01em;text-transform:none;font-weight:500}
-[data-style="refresh"] nav#nav a.on::before{display:none}
-[data-style="refresh"] nav#nav a.on{font-weight:700}
-[data-style="refresh"] .card,[data-style="refresh"] details.sec,[data-style="refresh"] .tasks,[data-style="refresh"] .linkrow,[data-style="refresh"] .reframe{border-radius:var(--r);border-width:1px}
-[data-style="refresh"] .card.ink,[data-style="refresh"] .tasks{border-color:var(--line-strong)}
-[data-style="refresh"] .card h2,[data-style="refresh"] .h2,[data-style="refresh"] details.sec>summary{font-weight:700;letter-spacing:.02em;font-size:.86rem}
-[data-style="refresh"] .tasks{overflow:hidden}
-[data-style="refresh"] .task{border-bottom-width:1px}
-[data-style="refresh"] .trow .name{font-weight:600}
-[data-style="refresh"] .check span{border-radius:6px;border-width:1.5px}
-[data-style="refresh"] .tag{border:0;border-radius:6px;padding:3px 7px;font-weight:700;letter-spacing:.06em}
-[data-style="refresh"] .tag.hard{background:color-mix(in srgb,var(--hard) 14%,transparent)}
-[data-style="refresh"] .tag.medium{background:color-mix(in srgb,var(--medium) 16%,transparent)}
-[data-style="refresh"] .tag.easy{background:color-mix(in srgb,var(--easy) 14%,transparent)}
-[data-style="refresh"] .tag.grade{background:var(--surface2)}
-[data-style="refresh"] .btn{border-width:1px;border-color:var(--line-strong);border-radius:10px;text-transform:none;letter-spacing:0;font-size:.86rem}
-[data-style="refresh"] .btn.sm{font-size:.78rem;border-radius:8px}
-[data-style="refresh"] .btn.primary{border-color:var(--accent)}
-[data-style="refresh"] .btn.block{border-radius:12px;font-weight:700}
-[data-style="refresh"] .seg{border:1px solid var(--line-strong);border-radius:10px;padding:2px;background:var(--surface2)}
-[data-style="refresh"] .seg button{border-radius:8px;text-transform:none;letter-spacing:0;font-size:.78rem}
-[data-style="refresh"] .seg button+button{border-left:0}
-[data-style="refresh"] .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
-[data-style="refresh"] input:not([type=checkbox]):not([type=color]),[data-style="refresh"] select,[data-style="refresh"] textarea{border-radius:10px;border-width:1px}
-[data-style="refresh"] .scale button,[data-style="refresh"] .pills button,[data-style="refresh"] .tri button,[data-style="refresh"] table.cgrid td button{border-radius:7px;border-width:1px;font-family:var(--body);font-weight:600}
-[data-style="refresh"] .stats{border:0;gap:8px}
-[data-style="refresh"] .stats .stat{border:1px solid var(--line);border-radius:10px;margin:0}
-[data-style="refresh"] .stat .v{font-weight:700;letter-spacing:-.01em}
-[data-style="refresh"] .hero .big{font-weight:800;letter-spacing:-.03em}
-[data-style="refresh"] .blocks{gap:2px;height:8px}
-[data-style="refresh"] .blocks i{border-radius:2px}
-[data-style="refresh"] .hint{border-radius:10px;border:1px solid var(--line);border-left-width:4px}
-[data-style="refresh"] .principle::before{content:"\201C";font-family:var(--body);font-weight:900}
-[data-style="refresh"] .principle{font-weight:500}
-[data-style="refresh"] .goal b{font-weight:800}
-[data-style="refresh"] .sugbar{border-radius:12px;border-width:1px}
-[data-style="refresh"] .ctrls .side,[data-style="refresh"] .ctrls .main{border-radius:50%}
-[data-style="refresh"] .ctrls .side{border-width:1px}
-[data-style="refresh"] .focus-card .time{font-weight:300;letter-spacing:-.04em}
-[data-style="refresh"] .focus-card .task-name{text-transform:none;font-weight:700}
-[data-style="refresh"] .wstep .n{border-radius:50%;border-width:1px;font-family:var(--body);font-weight:700}
-[data-style="refresh"] .wstep h3{font-weight:700;text-transform:none}
-[data-style="refresh"] .mbox{border-radius:16px;border-width:1px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-[data-style="refresh"] #toast{border-radius:10px}
-[data-style="refresh"] .meter{border-radius:99px;overflow:visible}
-[data-style="refresh"] .meter>i{border-radius:99px}
-[data-style="refresh"] .chart svg{shape-rendering:auto}
-[data-style="refresh"] #splash .word{font-style:italic;font-weight:900;font-size:1.25rem;letter-spacing:.02em}
-[data-style="refresh"] #splash .logo{display:none}
-[data-style="refresh"] #splash .logo-smooth{display:block}
-[data-style="refresh"] #splash .blocks{gap:0;height:3px}
-[data-style="refresh"] #splash .blocks i{border-radius:0}
+:is([data-style="refresh"],[data-style="simplified"]) body{font-size:15px;line-height:1.5}
+:is([data-style="refresh"],[data-style="simplified"]) .title{font-weight:900;font-style:italic;letter-spacing:-.01em;font-size:2rem}
+:is([data-style="refresh"],[data-style="simplified"]) .title::after{display:none}
+:is([data-style="refresh"],[data-style="simplified"]) .eyebrow{font-weight:600;font-size:.66rem;letter-spacing:.14em}
+:is([data-style="refresh"],[data-style="simplified"]) .brand{font-style:italic;font-weight:900;letter-spacing:0}
+:is([data-style="refresh"],[data-style="simplified"]) .top{border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(10px)}
+:is([data-style="refresh"],[data-style="simplified"]) .pill{border:1px solid var(--line-strong);border-radius:99px;font-weight:600;font-size:.78rem;padding:3px 10px}
+:is([data-style="refresh"],[data-style="simplified"]) nav#nav{border-top:1px solid var(--line);background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px)}
+:is([data-style="refresh"],[data-style="simplified"]) nav#nav a{font-size:.6rem;letter-spacing:.01em;text-transform:none;font-weight:500}
+:is([data-style="refresh"],[data-style="simplified"]) nav#nav a.on::before{display:none}
+:is([data-style="refresh"],[data-style="simplified"]) nav#nav a.on{font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"]) .card,:is([data-style="refresh"],[data-style="simplified"]) details.sec,:is([data-style="refresh"],[data-style="simplified"]) .tasks,:is([data-style="refresh"],[data-style="simplified"]) .linkrow,:is([data-style="refresh"],[data-style="simplified"]) .reframe{border-radius:var(--r);border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"]) .card.ink,:is([data-style="refresh"],[data-style="simplified"]) .tasks{border-color:var(--line-strong)}
+:is([data-style="refresh"],[data-style="simplified"]) .card h2,:is([data-style="refresh"],[data-style="simplified"]) .h2,:is([data-style="refresh"],[data-style="simplified"]) details.sec>summary{font-weight:700;letter-spacing:.02em;font-size:.86rem}
+:is([data-style="refresh"],[data-style="simplified"]) .tasks{overflow:hidden}
+:is([data-style="refresh"],[data-style="simplified"]) .task{border-bottom-width:1px}
+:is([data-style="refresh"],[data-style="simplified"]) .trow .name{font-weight:600}
+:is([data-style="refresh"],[data-style="simplified"]) .check span{border-radius:6px;border-width:1.5px}
+:is([data-style="refresh"],[data-style="simplified"]) .tag{border:0;border-radius:6px;padding:3px 7px;font-weight:700;letter-spacing:.06em}
+:is([data-style="refresh"],[data-style="simplified"]) .tag.hard{background:color-mix(in srgb,var(--hard) 14%,transparent)}
+:is([data-style="refresh"],[data-style="simplified"]) .tag.medium{background:color-mix(in srgb,var(--medium) 16%,transparent)}
+:is([data-style="refresh"],[data-style="simplified"]) .tag.easy{background:color-mix(in srgb,var(--easy) 14%,transparent)}
+:is([data-style="refresh"],[data-style="simplified"]) .tag.grade{background:var(--surface2)}
+:is([data-style="refresh"],[data-style="simplified"]) .btn{border-width:1px;border-color:var(--line-strong);border-radius:10px;text-transform:none;letter-spacing:0;font-size:.86rem}
+:is([data-style="refresh"],[data-style="simplified"]) .btn.sm{font-size:.78rem;border-radius:8px}
+:is([data-style="refresh"],[data-style="simplified"]) .btn.primary{border-color:var(--accent)}
+:is([data-style="refresh"],[data-style="simplified"]) .btn.block{border-radius:12px;font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"]) .seg{border:1px solid var(--line-strong);border-radius:10px;padding:2px;background:var(--surface2)}
+:is([data-style="refresh"],[data-style="simplified"]) .seg button{border-radius:8px;text-transform:none;letter-spacing:0;font-size:.78rem}
+:is([data-style="refresh"],[data-style="simplified"]) .seg button+button{border-left:0}
+:is([data-style="refresh"],[data-style="simplified"]) .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+:is([data-style="refresh"],[data-style="simplified"]) input:not([type=checkbox]):not([type=color]),:is([data-style="refresh"],[data-style="simplified"]) select,:is([data-style="refresh"],[data-style="simplified"]) textarea{border-radius:10px;border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"]) .scale button,:is([data-style="refresh"],[data-style="simplified"]) .pills button,:is([data-style="refresh"],[data-style="simplified"]) .tri button,:is([data-style="refresh"],[data-style="simplified"]) table.cgrid td button{border-radius:7px;border-width:1px;font-family:var(--body);font-weight:600}
+:is([data-style="refresh"],[data-style="simplified"]) .stats{border:0;gap:8px}
+:is([data-style="refresh"],[data-style="simplified"]) .stats .stat{border:1px solid var(--line);border-radius:10px;margin:0}
+:is([data-style="refresh"],[data-style="simplified"]) .stat .v{font-weight:700;letter-spacing:-.01em}
+:is([data-style="refresh"],[data-style="simplified"]) .hero .big{font-weight:800;letter-spacing:-.03em}
+:is([data-style="refresh"],[data-style="simplified"]) .blocks{gap:2px;height:8px}
+:is([data-style="refresh"],[data-style="simplified"]) .blocks i{border-radius:2px}
+:is([data-style="refresh"],[data-style="simplified"]) .hint{border-radius:10px;border:1px solid var(--line);border-left-width:4px}
+:is([data-style="refresh"],[data-style="simplified"]) .principle::before{content:"\201C";font-family:var(--body);font-weight:900}
+:is([data-style="refresh"],[data-style="simplified"]) .principle{font-weight:500}
+:is([data-style="refresh"],[data-style="simplified"]) .goal b{font-weight:800}
+:is([data-style="refresh"],[data-style="simplified"]) .sugbar{border-radius:12px;border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"]) .ctrls .side,:is([data-style="refresh"],[data-style="simplified"]) .ctrls .main{border-radius:50%}
+:is([data-style="refresh"],[data-style="simplified"]) .ctrls .side{border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"]) .focus-card .time{font-weight:300;letter-spacing:-.04em}
+:is([data-style="refresh"],[data-style="simplified"]) .focus-card .task-name{text-transform:none;font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"]) .wstep .n{border-radius:50%;border-width:1px;font-family:var(--body);font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"]) .wstep h3{font-weight:700;text-transform:none}
+:is([data-style="refresh"],[data-style="simplified"]) .mbox{border-radius:16px;border-width:1px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+:is([data-style="refresh"],[data-style="simplified"]) #toast{border-radius:10px}
+:is([data-style="refresh"],[data-style="simplified"]) .meter{border-radius:99px;overflow:visible}
+:is([data-style="refresh"],[data-style="simplified"]) .meter>i{border-radius:99px}
+:is([data-style="refresh"],[data-style="simplified"]) .chart svg{shape-rendering:auto}
+:is([data-style="refresh"],[data-style="simplified"]) #splash .word{font-style:italic;font-weight:900;font-size:1.25rem;letter-spacing:.02em}
+:is([data-style="refresh"],[data-style="simplified"]) #splash .logo{display:none}
+:is([data-style="refresh"],[data-style="simplified"]) #splash .logo-smooth{display:block}
+:is([data-style="refresh"],[data-style="simplified"]) #splash .blocks{gap:0;height:3px}
+:is([data-style="refresh"],[data-style="simplified"]) #splash .blocks i{border-radius:0}
 #splash .logo-smooth{display:none;width:84px;height:84px}
 
 /* ================================================================
@@ -455,7 +455,7 @@ table.data td{padding:8px 6px;border-bottom:var(--px) solid var(--line);vertical
 [data-style="bw"] #splash .blocks i.on{background:#f2f2f2}
 
 /* style picker in Settings */
-.stylepick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stylepick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .stylepick button{border:var(--px) solid var(--line);background:var(--surface);padding:10px;cursor:pointer;text-align:left;display:grid;gap:8px;color:var(--ink)}
 .stylepick button.on{border-color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
 .stylepick .sw{display:flex;height:34px}
@@ -469,6 +469,117 @@ table.data td{padding:8px 6px;border-bottom:var(--px) solid var(--line);vertical
 #splash .logo-img{width:132px;height:132px;image-rendering:pixelated}
 .brand .mark{width:24px;height:24px;image-rendering:pixelated;flex:0 0 auto}
 [data-style="bw"] #splash .logo-img,[data-style="bw"] .brand .mark{filter:grayscale(1) contrast(1.2)}
-[data-style="refresh"] #splash .logo-img{image-rendering:auto}
 [data-style="bw"] #splash{background:#000}
 [data-style="bw"] #splash .logo-img{mix-blend-mode:lighten}
+
+/* ================================================================
+   Aware Mode boards: loading screens. Each style shows the mark, one
+   progress cue, the wordmark and "LOADING…", nothing else.
+   ================================================================ */
+#splash .spin,#splash .ld{display:none}
+#splash .ld{font-size:.66rem;font-weight:600;letter-spacing:.32em;padding-left:.32em;color:#8c867b;margin-top:12px;text-transform:uppercase}
+:root:not([data-style="pixel"]) #splash .line,:root:not([data-style="pixel"]) #splash .load .row{display:none}
+:root:not([data-style="pixel"]) #splash .ld{display:block}
+:root:not([data-style="pixel"]) #splash .logo-img{order:1;margin-bottom:30px}
+:root:not([data-style="pixel"]) #splash .word{margin-top:0}
+:root:not([data-style="pixel"]) #splash .ld{order:9}
+/* Refresh: mark, spinner, wordmark */
+[data-style="refresh"] #splash .load{display:none}
+[data-style="refresh"] #splash .spin{display:block;order:2;margin-bottom:30px;animation:aw-spin 1s linear infinite}
+[data-style="refresh"] #splash .word{order:3;font-size:1.2rem;letter-spacing:.04em}
+@keyframes aw-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#splash .spin{animation:none!important}}
+/* Simplified: mark, hairline bar, small wordmark */
+[data-style="simplified"] #splash .load{order:2;width:120px;margin:0 0 28px}
+[data-style="simplified"] #splash .blocks{height:2px;margin:0;gap:0}
+[data-style="simplified"] #splash .blocks i{background:#1c2440}
+[data-style="simplified"] #splash .blocks i.on{background:#f1ede4}
+[data-style="simplified"] #splash .word{order:3;font-size:.95rem}
+[data-style="simplified"] #splash .ld{margin-top:10px;font-size:.7rem;letter-spacing:.3em}
+/* Pixel B&W: mark, wordmark, block bar */
+[data-style="bw"] #splash .logo-img{margin-bottom:34px}
+[data-style="bw"] #splash .word{order:2;font-size:1.4rem}
+[data-style="bw"] #splash .load{order:3;margin-top:26px;width:min(220px,70vw)}
+[data-style="bw"] #splash .blocks{height:8px;margin:0}
+[data-style="bw"] #splash .ld{font-family:var(--pixel);font-weight:400;letter-spacing:.2em;padding-left:.2em;color:#8c8c8c;margin-top:16px}
+
+/* Refresh board: short accent tab over the active nav item, ring timer */
+[data-style="refresh"] nav#nav a.on{color:var(--accent)}
+[data-style="refresh"] nav#nav a.on::before{display:block;top:0;left:50%;right:auto;width:20px;margin-left:-10px;height:3px;border-radius:0 0 3px 3px}
+[data-style="refresh"] .focus-card .time{position:relative;width:min(220px,60vw);aspect-ratio:1;margin:18px auto 8px;display:grid;place-items:center;font-size:clamp(2.6rem,12vw,3.6rem)}
+[data-style="refresh"] .focus-card .time::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p,0)*1%),var(--inv-line) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px))}
+[data-style="refresh"] .focus-card #tblocks{display:none}
+
+/* Pixel B&W board: faint dot grid behind everything */
+[data-style="bw"] body{background-image:radial-gradient(var(--line) 1px,transparent 1.2px);background-size:12px 12px}
+
+/* ================================================================
+   STYLE: SIMPLIFIED  (html[data-style="simplified"])
+   Builds on the Refresh layer, then takes things away: flat surfaces, hairlines,
+   one accent for actions and the active tab, status colour only for meaning.
+   ================================================================ */
+:root[data-style="simplified"]{
+  --bg:#f4f1ea; --surface:#fffdf8; --surface2:#efeadf; --ink:#151412; --ink2:#3e3a33; --muted:#857f73; --line:#d8d1c2; --line-strong:#d8d1c2;
+  --good:#2f8f5b; --warn:#c98a00; --bad:#c2362b; --hard:#c2362b; --medium:#a87400; --easy:#2f8f5b;
+  --inv-bg:var(--surface); --inv-ink:var(--ink); --inv-muted:var(--muted); --inv-line:var(--line);
+  --pixel:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --px:1px; --r:12px; --r-sm:8px;
+}
+:root[data-style="simplified"][data-theme="dark"]{
+  --bg:#111110; --surface:#1b1a18; --surface2:#262522; --ink:#f1ede4; --ink2:#d3cec3; --muted:#8c867b; --line:#34322e; --line-strong:#34322e;
+  --good:#4bb47c; --warn:#e0a52c; --bad:#e85b4e; --hard:#e85b4e; --medium:#e0a52c; --easy:#4bb47c;
+}
+[data-style="simplified"] body{font-size:15px;line-height:1.35}
+[data-style="simplified"] .title{font-size:1.75rem;line-height:1.05;letter-spacing:-.015em}
+[data-style="simplified"] .eyebrow{font-size:.69rem;font-weight:600;letter-spacing:.12em}
+[data-style="simplified"] .top,[data-style="simplified"] nav#nav{background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none}
+[data-style="simplified"] .brand{font-size:.95rem;letter-spacing:.02em}
+[data-style="simplified"] .brand .mark{border-radius:6px}
+[data-style="simplified"] .pill{border:0;background:var(--surface2);font-size:.69rem;padding:4px 9px}
+[data-style="simplified"] .pill .pxi{color:var(--ink2)}
+[data-style="simplified"] nav#nav a{font-size:.62rem;font-weight:400}
+[data-style="simplified"] nav#nav a.on{color:var(--accent);font-weight:600}
+[data-style="simplified"] nav#nav a.on::before{display:block;top:0;left:50%;right:auto;width:20px;margin-left:-10px;height:2px;border-radius:0 0 2px 2px;background:var(--accent)}
+[data-style="simplified"] .card,[data-style="simplified"] details.sec,[data-style="simplified"] .tasks,[data-style="simplified"] .linkrow,[data-style="simplified"] .reframe,[data-style="simplified"] .sugbar,[data-style="simplified"] .hint{border:1px solid var(--line);box-shadow:none;border-radius:12px}
+[data-style="simplified"] .card h2,[data-style="simplified"] .h2,[data-style="simplified"] details.sec>summary{font-size:.69rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+[data-style="simplified"] .sugbar{background:var(--surface)}
+[data-style="simplified"] .hint{border-left-width:1px;background:var(--surface)}
+[data-style="simplified"] .hint.warn{box-shadow:inset 3px 0 0 var(--warn)}
+[data-style="simplified"] .hint.bad{box-shadow:inset 3px 0 0 var(--bad)}
+[data-style="simplified"] .trow .dd{font-family:var(--body);font-variant-numeric:tabular-nums}
+[data-style="simplified"] .task.done .name{text-decoration-thickness:1px}
+[data-style="simplified"] .check span{border-color:var(--muted)}
+[data-style="simplified"] .check input:checked+span{background:var(--ink);border-color:var(--ink)}
+[data-style="simplified"] .check input:checked+span::after{border-color:var(--bg);border-width:0 0 2.4px 2.4px}
+[data-style="simplified"] .tag{letter-spacing:0;text-transform:none;font-size:.69rem;font-weight:600;padding:2px 7px;border-radius:6px}
+[data-style="simplified"] .tag.hard{background:color-mix(in srgb,var(--hard) 10%,transparent)}
+[data-style="simplified"] .tag.medium{background:color-mix(in srgb,var(--warn) 13%,transparent)}
+[data-style="simplified"] .tag.easy{background:color-mix(in srgb,var(--easy) 11%,transparent)}
+[data-style="simplified"] .btn{border-color:var(--line);font-weight:600;min-height:44px;border-radius:12px;font-size:.9rem}
+[data-style="simplified"] .btn.sm{min-height:32px;border-radius:8px;font-size:.8rem}
+[data-style="simplified"] .btn.ghost{border-color:transparent;color:var(--ink2)}
+[data-style="simplified"] .btn.primary{color:#fff}
+[data-style="simplified"] .btn.block{min-height:48px}
+[data-style="simplified"] .seg{border:0}
+[data-style="simplified"] .seg button{font-weight:600;font-size:.69rem}
+[data-style="simplified"] .seg button.on{box-shadow:0 0 0 1px var(--line)}
+[data-style="simplified"] input:not([type=checkbox]):not([type=color]),[data-style="simplified"] select,[data-style="simplified"] textarea{background:var(--surface2);border-color:transparent;min-height:44px}
+[data-style="simplified"] .scale button.on,[data-style="simplified"] .pills button.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+[data-style="simplified"] .stats .stat{border-color:var(--line)}
+[data-style="simplified"] .stat .v{font-weight:600}
+[data-style="simplified"] .stat .k{letter-spacing:.12em;font-weight:600}
+[data-style="simplified"] .blocks{height:4px;gap:0;border-radius:2px;overflow:hidden}
+[data-style="simplified"] .blocks i{border-radius:0}
+[data-style="simplified"] .blocks i.on{background:var(--ink)}
+[data-style="simplified"] .mbox{box-shadow:0 12px 28px -16px rgba(40,30,10,.28);border-radius:12px}
+[data-style="simplified"] #toast{border-radius:12px;box-shadow:none}
+/* Focus: the timer is the title, no dark panel */
+[data-style="simplified"] .focus-card{background:transparent;border:0;padding:8px 0}
+[data-style="simplified"] .focus-card .task-name{font-weight:600;font-size:1rem}
+[data-style="simplified"] .focus-card .time{font-weight:900;font-style:italic;letter-spacing:-.02em;font-size:clamp(3.2rem,15vw,4.4rem);margin:14px 0 6px}
+[data-style="simplified"] .focus-card .mode,[data-style="simplified"] .focus-card .mode.break{color:var(--muted);letter-spacing:.12em;font-weight:600}
+[data-style="simplified"] .focus-card .blocks{height:2px;width:180px;margin:10px auto 6px}
+[data-style="simplified"] .ctrls .side,[data-style="simplified"] .ctrls .main{border-radius:12px}
+[data-style="simplified"] .ctrls .side{border:1px solid var(--line);width:64px;height:52px;font-weight:600}
+[data-style="simplified"] .ctrls .main{width:120px;height:52px;color:#fff}
+[data-style="simplified"] .stylepick button,[data-style="refresh"] .stylepick button{border-radius:12px}
