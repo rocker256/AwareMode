@@ -240,6 +240,7 @@ const STYLES = [
   { id: 'refresh', name: 'Refresh', note: 'Clean sans, italic titles, soft cards.', sw: ['#f4f1ea', '#fffdf8', '#e4572e', '#c2362b'] },
   { id: 'bw', name: 'Pixel B&W', note: 'Black and white only, notched pixels.', sw: ['#000000', '#6b6b6b', '#e4e4e4', '#ffffff'] },
   { id: 'simplified', name: 'Simplified', note: 'Flat and quiet. One accent, hairlines only.', sw: ['#f4f1ea', '#fffdf8', '#d8d1c2', '#151412'] },
+  { id: 'studio', name: 'Studio', layout: 'rail', fixedAccent: true, note: 'Sidebar dashboard. Pastel, pill buttons, two columns.', sw: ['#f6f5fb', '#ffffff', '#6c5ce7', '#23213a'] },
   { id: 'gamified', name: 'Gamified', note: 'Dark, round and bold. Three colours, mission cards.', sw: ['#0b0b0f', '#1b1b1f', '#ff4a1c', '#f4f3ef'] },
 ];
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -247,9 +248,13 @@ function applyTheme() {
   const st = S.settings, root = document.documentElement;
   const dark = st.theme === 'dark' || (st.theme === 'auto' && mq.matches);
   root.dataset.theme = dark ? 'dark' : 'light';
-  root.dataset.style = STYLES.some(x => x.id === st.style) ? st.style : 'pixel';
-  // Pixel B&W is black and white only, so the accent colour applies to the other two styles
-  if (root.dataset.style === 'bw') root.style.removeProperty('--accent'); else root.style.setProperty('--accent', st.accent);
+  const def = STYLES.find(x => x.id === st.style) || STYLES[0];
+  root.dataset.style = def.id;
+  // a style can bring its own layout (navigation, structure), not only colours
+  root.dataset.layout = def.layout || 'tabs';
+  root.classList.remove('menu-open');
+  // Pixel B&W and the layout styles bring their own palette, so the accent colour applies to the rest
+  if (def.id === 'bw' || def.fixedAccent) root.style.removeProperty('--accent'); else root.style.setProperty('--accent', st.accent);
   if (root.dataset.style === 'pixel') root.style.setProperty('--hard', st.accent); else root.style.removeProperty('--hard');
   root.style.setProperty('--fs', (st.fontScale || 100) + '%');
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = dark ? '#0f0e0d' : '#f4f1ea';
@@ -320,7 +325,7 @@ const LINE = {
   plus: '<path d="M12 5v14M5 12h14"/>',
 };
 function px(name, size = 18) {
-  if (['refresh', 'simplified', 'gamified'].includes(S.settings.style) && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
+  if (['refresh', 'simplified', 'gamified', 'studio'].includes(S.settings.style) && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
   const rows = PX[name]; if (!rows) return '';
   const h = rows.length, w = rows[0].length, fills = { '#': 'currentColor', a: 'var(--accent)', c: '#f4f1ea' };
   let r = '';
@@ -1006,11 +1011,32 @@ V.settings = () => {
 function getPath(o, p) { return p.split('.').reduce((a, k) => a?.[k], o); }
 function setPath(o, p, v) { const ks = p.split('.'); const last = ks.pop(); const t = ks.reduce((a, k) => a[k], o); t[last] = v; }
 
+/* Per-layout view overrides: LV[layout][view] replaces V[view] when that layout is active. */
+const LV = {};
+
+/* ---------- Studio (rail layout): Today as a two-column dashboard ---------- */
+LV.rail = {
+  attack() {
+    const k = todayKey(), s = streak(), ts = activeTasks(k), left = ts.filter(t => !t.done);
+    const mins = S.sessions.filter(x => x.d === k && x.type !== 'break').reduce((a, x) => a + x.m, 0);
+    const week = Array.from({ length: 7 }, (_, i) => addDays(k, i - 6)).map(d => { const c = dayCompletion(d); return `<i title="${d}" style="--h:${c == null ? 4 : Math.max(6, c)}%"></i>`; }).join('');
+    return `<div class="studio"><div class="s-main">${V.attack()}</div><aside class="s-side">
+      <div class="card s-focus"><div class="eyebrow">Focus</div><div class="s-big">${S.settings.timer.work}<small> min</small></div>
+        <p class="small muted">${left.length ? 'Next: ' + esc(left[0].what || 'Untitled') : 'Everything is done for today.'}</p>
+        <button class="btn primary block" data-act="startFocus">${px('play', 11)} Start focus</button></div>
+      <div class="card"><div class="eyebrow">This week</div><div class="s-week">${week}</div>
+        <div class="row between small"><span class="muted">Streak</span><b>${s.n} day${s.n === 1 ? '' : 's'}</b></div>
+        <div class="row between small"><span class="muted">Focused today</span><b>${mins} min</b></div></div>
+    </aside></div>`;
+  },
+};
+
 /* ---------- render + routing ---------- */
+const layout = () => document.documentElement.dataset.layout || 'tabs';
 function render() {
   const v = V[S.ui.view] ? S.ui.view : 'attack';
   const y = window.scrollY;
-  $('#main').innerHTML = `<div class="wrap">${V[v]()}</div>`;
+  $('#main').innerHTML = `<div class="wrap">${(LV[layout()]?.[v] || V[v])()}</div>`;
   window.scrollTo(0, y);
   document.querySelectorAll('.gridwrap').forEach(g => { g.scrollLeft = g.scrollWidth; });
   renderNav();
@@ -1082,6 +1108,7 @@ function copyText(t) {
 function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
 
 const ACT = {
+  menu() { document.documentElement.classList.toggle('menu-open'); },
   setval(el) {
     const [, k, id, f] = el.dataset.path.split('|'); const t = findTask(k, id); if (!t) return;
     const v = +el.dataset.v; t[f] = t[f] === v ? null : v; save(); render();
@@ -1217,7 +1244,8 @@ document.addEventListener('click', e => {
   const a = e.target.closest('[data-act]');
   if (a && ACT[a.dataset.act]) { ACT[a.dataset.act](a, e); return; }
   const n = e.target.closest('[data-nav]');
-  if (n) { e.preventDefault(); go(n.dataset.nav); }
+  if (n) { e.preventDefault(); document.documentElement.classList.remove('menu-open'); go(n.dataset.nav); }
+  else if (e.target.id === 'scrim') document.documentElement.classList.remove('menu-open');
 });
 
 /* ---------- boot + loading screen ---------- */
