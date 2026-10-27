@@ -243,6 +243,7 @@ const STYLES = [
   { id: 'studio', name: 'Studio', layout: 'rail', fixedAccent: true, note: 'Sidebar dashboard. Pastel, pill buttons, two columns.', sw: ['#f6f5fb', '#ffffff', '#6c5ce7', '#23213a'] },
   { id: 'terminal', name: 'Terminal', layout: 'term', fixedAccent: true, note: 'Command line. Type to move, green on black.', sw: ['#050805', '#0d140e', '#5cff8f', '#ffb02e'] },
   { id: 'timeline', name: 'Timeline', layout: 'timeline', fixedAccent: true, note: 'Your day by the hour. Bold colour blocks, + button.', sw: ['#fffaf0', '#ff6b35', '#2a4bff', '#00b37e'] },
+  { id: 'deck', name: 'Deck', layout: 'deck', fixedAccent: true, note: 'One big card at a time. Swipe through your day.', sw: ['#ffe600', '#111111', '#ffffff', '#ff3d00'] },
   { id: 'gamified', name: 'Gamified', note: 'Dark, round and bold. Three colours, mission cards.', sw: ['#0b0b0f', '#1b1b1f', '#ff4a1c', '#f4f3ef'] },
 ];
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -327,7 +328,7 @@ const LINE = {
   plus: '<path d="M12 5v14M5 12h14"/>',
 };
 function px(name, size = 18) {
-  if (['refresh', 'simplified', 'gamified', 'studio', 'timeline'].includes(S.settings.style) && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
+  if (['refresh', 'simplified', 'gamified', 'studio', 'timeline', 'deck'].includes(S.settings.style) && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
   const rows = PX[name]; if (!rows) return '';
   const h = rows.length, w = rows[0].length, fills = { '#': 'currentColor', a: 'var(--accent)', c: '#f4f1ea' };
   let r = '';
@@ -1078,6 +1079,52 @@ LV.timeline = {
   },
 };
 
+/* ---------- Deck layout: Today as one big card at a time ---------- */
+let deckSkip = 0;
+const deckQueue = k => activeTasks(k).filter(t => !t.done);
+LV.deck = {
+  attack() {
+    const st = S.settings, t = todayKey(), k = S.ui.date || t;
+    const ts = activeTasks(k), q = deckQueue(k), done = ts.length - q.length;
+    if (deckSkip >= q.length) deckSkip = 0;
+    const cur = q[deckSkip];
+    let h = `<div class="dk-head"><div><div class="eyebrow">${esc(niceDate(k, { weekday: 'long', day: 'numeric', month: 'short' }))}</div><h1 class="title">${k === t ? 'Today' : 'That day'}</h1></div><div class="dk-count"><b>${done}</b>/${ts.length}<span>done</span></div></div>
+      <div class="dk-pips">${ts.map(x => `<i class="${x.done ? 'on' : x === cur ? 'cur' : ''}"></i>`).join('')}</div>`;
+    if (cur) {
+      const amount = cur.qty != null ? `${cur.qty}${cur.unit ? ' ' + cur.unit : ''}` : '';
+      const kind = kindOf(cur);
+      h += `<div class="dk-card" id="dkcard" data-id="${cur.id}" data-k="${k}">
+        <div class="dk-top"><span>${q.length > 1 ? `${deckSkip + 1} of ${q.length} left` : 'Last one'}</span>${kind ? `<span class="tag ${kind}">${kind}</span>` : ''}</div>
+        <h2 class="dk-name">${esc(cur.what || 'Untitled task')}</h2>
+        <dl class="dk-facts">${amount ? `<div><dt>How much</dt><dd>${esc(amount)}</dd></div>` : ''}${cur.when ? `<div><dt>When</dt><dd>${esc(cur.when)}</dd></div>` : ''}${cur.where ? `<div><dt>Where</dt><dd>${esc(cur.where)}</dd></div>` : ''}${cur.pd ? `<div><dt>Difficulty</dt><dd>${cur.pd}/10</dd></div>` : ''}</dl>
+        ${cur.detail ? `<p class="dk-detail">${esc(cur.detail)}</p>` : ''}
+        <div class="dk-acts"><button class="btn dk-skip" data-act="deckSkip" ${q.length < 2 ? 'disabled' : ''}>Skip</button><button class="btn primary dk-done" data-act="deckDone" data-k="${k}" data-id="${cur.id}">Done</button></div>
+        <div class="dk-more"><button class="btn sm" data-act="focusTask" data-k="${k}" data-id="${cur.id}">${px('play', 10)} Focus on it</button><button class="btn sm ghost" data-act="toggleTask" data-id="${cur.id}">Edit</button></div>
+      </div><p class="dk-hint muted small">Swipe right for done, left to skip.</p>`;
+      if (openTask.has(cur.id)) h += `<div class="tasks">${taskRow(k, cur, ts.indexOf(cur), 'today')}</div>`;
+    } else {
+      h += `<div class="dk-card dk-empty"><h2 class="dk-name">${ts.length ? 'All done.' : 'Empty deck.'}</h2><p>${ts.length ? 'Every card is cleared. Plan tomorrow while it is fresh.' : `Add your first task. Aim for ${st.hardTasksTarget} hard ones around ${st.targetDifficulty}/10.`}</p>
+        <div class="dk-acts">${ts.length ? '<a class="btn primary" href="#plan" data-nav="plan">Build tomorrow</a>' : `<button class="btn primary" data-act="addTask" data-k="${k}">Add task</button>`}</div></div>`;
+    }
+    dayHints(k).forEach(([c, m]) => { h += `<div class="hint ${c}" style="margin:8px 0">${esc(m)}</div>`; });
+    h += sec('dkall', `All cards (${ts.length})`, taskList(k, 'today', 'No tasks yet.'));
+    h += `<div class="goal"><span>Next day attack goal</span><b>${st.targetDifficulty}/10</b></div>`;
+    if (st.showRulesOnToday) h += sec('rules', 'Manual check-in', rulesCheckin(k), compBadge(k));
+    if (st.showFactorsOnToday) h += sec('factors', 'Factors', factorsForm(k));
+    if (st.showJournalOnToday) h += sec('journal', 'Feedback journal', journalForm(k));
+    return h + sheetForPrint(k);
+  },
+};
+// swipe on the deck card: right = done, left = skip
+let dkX = null;
+document.addEventListener('touchstart', e => { dkX = e.target.closest('#dkcard') && !e.target.closest('button,input,a') ? e.touches[0].clientX : null; }, { passive: true });
+document.addEventListener('touchmove', e => { const c = $('#dkcard'); if (dkX == null || !c) return; const dx = e.touches[0].clientX - dkX; c.style.transform = `translateX(${dx}px) rotate(${dx / 30}deg)`; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const c = $('#dkcard'); if (dkX == null || !c) return;
+  const dx = e.changedTouches[0].clientX - dkX; dkX = null; c.style.transform = '';
+  if (dx > 90) ACT.deckDone(c); else if (dx < -90) ACT.deckSkip();
+});
+
 const CMD_HELP = 'today | tomorrow | focus | woop | manual | insights | history | settings | 1-8 | add <task> | done <n> | start | pause | reset | style <name> | help';
 function runCmd(raw) {
   const [c0, ...rest] = raw.trim().split(/\s+/), c = (c0 || '').toLowerCase(), arg = rest.join(' ');
@@ -1202,6 +1249,8 @@ function copyText(t) {
 function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
 
 const ACT = {
+  deckDone(el) { const t = findTask(el.dataset.k, el.dataset.id); if (!t) return; t.done = true; save(); render(); toast('Done: ' + (t.what || 'task')); },
+  deckSkip() { deckSkip++; render(); },
   menu() { document.documentElement.classList.toggle('menu-open'); },
   setval(el) {
     const [, k, id, f] = el.dataset.path.split('|'); const t = findTask(k, id); if (!t) return;
