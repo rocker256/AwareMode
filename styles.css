@@ -31,7 +31,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-:root:not([data-style="refresh"]):not([data-style="simplified"]):not([data-style="gamified"]) *{border-radius:0!important}
+:root:is([data-style="pixel"],[data-style="bw"]) *{border-radius:0!important}
 [hidden]{display:none!important}
 html{font-size:var(--fs);-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--body);padding-bottom:calc(72px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
@@ -331,66 +331,66 @@ table.data td{padding:8px 6px;border-bottom:var(--px) solid var(--line);vertical
   --bg:#111110; --surface:#1b1a18; --surface2:#242320; --ink:#f1ede4; --muted:#8c867b; --line:#2a2825; --line-strong:#302e2a;
   --good:#4bb47c; --warn:#e0a52c; --bad:#e85b4e; --hard:#e85b4e; --medium:#e0a52c; --easy:#4bb47c;
 }
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) body{font-size:15px;line-height:1.5}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .title{font-weight:900;font-style:italic;letter-spacing:-.01em;font-size:2rem}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .title::after{display:none}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .eyebrow{font-weight:600;font-size:.66rem;letter-spacing:.14em}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .brand{font-style:italic;font-weight:900;letter-spacing:0}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .top{border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(10px)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .pill{border:1px solid var(--line-strong);border-radius:99px;font-weight:600;font-size:.78rem;padding:3px 10px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) nav#nav{border-top:1px solid var(--line);background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) nav#nav a{font-size:.6rem;letter-spacing:.01em;text-transform:none;font-weight:500}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) nav#nav a.on::before{display:none}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) nav#nav a.on{font-weight:700}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .card,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) details.sec,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tasks,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .linkrow,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .reframe{border-radius:var(--r);border-width:1px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .card.ink,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tasks{border-color:var(--line-strong)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .card h2,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .h2,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) details.sec>summary{font-weight:700;letter-spacing:.02em;font-size:.86rem}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tasks{overflow:hidden}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .task{border-bottom-width:1px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .trow .name{font-weight:600}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .check span{border-radius:6px;border-width:1.5px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tag{border:0;border-radius:6px;padding:3px 7px;font-weight:700;letter-spacing:.06em}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tag.hard{background:color-mix(in srgb,var(--hard) 14%,transparent)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tag.medium{background:color-mix(in srgb,var(--medium) 16%,transparent)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tag.easy{background:color-mix(in srgb,var(--easy) 14%,transparent)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tag.grade{background:var(--surface2)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .btn{border-width:1px;border-color:var(--line-strong);border-radius:10px;text-transform:none;letter-spacing:0;font-size:.86rem}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .btn.sm{font-size:.78rem;border-radius:8px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .btn.primary{border-color:var(--accent)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .btn.block{border-radius:12px;font-weight:700}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .seg{border:1px solid var(--line-strong);border-radius:10px;padding:2px;background:var(--surface2)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .seg button{border-radius:8px;text-transform:none;letter-spacing:0;font-size:.78rem}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .seg button+button{border-left:0}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) input:not([type=checkbox]):not([type=color]),:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) select,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) textarea{border-radius:10px;border-width:1px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .scale button,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .pills button,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tri button,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) table.cgrid td button{border-radius:7px;border-width:1px;font-family:var(--body);font-weight:600}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .stats{border:0;gap:8px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .stats .stat{border:1px solid var(--line);border-radius:10px;margin:0}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .stat .v{font-weight:700;letter-spacing:-.01em}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .hero .big{font-weight:800;letter-spacing:-.03em}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .blocks{gap:2px;height:8px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .blocks i{border-radius:2px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .hint{border-radius:10px;border:1px solid var(--line);border-left-width:4px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .principle::before{content:"\201C";font-family:var(--body);font-weight:900}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .principle{font-weight:500}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .goal b{font-weight:800}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .sugbar{border-radius:12px;border-width:1px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .ctrls .side,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .ctrls .main{border-radius:50%}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .ctrls .side{border-width:1px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .focus-card .time{font-weight:300;letter-spacing:-.04em}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .focus-card .task-name{text-transform:none;font-weight:700}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .wstep .n{border-radius:50%;border-width:1px;font-family:var(--body);font-weight:700}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .wstep h3{font-weight:700;text-transform:none}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .mbox{border-radius:16px;border-width:1px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #toast{border-radius:10px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .meter{border-radius:99px;overflow:visible}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .meter>i{border-radius:99px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .chart svg{shape-rendering:auto}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #splash .word{font-style:italic;font-weight:900;font-size:1.25rem;letter-spacing:.02em}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #splash .logo{display:none}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #splash .logo-smooth{display:block}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #splash .blocks{gap:0;height:3px}
-:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #splash .blocks i{border-radius:0}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) body{font-size:15px;line-height:1.5}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .title{font-weight:900;font-style:italic;letter-spacing:-.01em;font-size:2rem}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .title::after{display:none}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .eyebrow{font-weight:600;font-size:.66rem;letter-spacing:.14em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .brand{font-style:italic;font-weight:900;letter-spacing:0}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .top{border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(10px)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .pill{border:1px solid var(--line-strong);border-radius:99px;font-weight:600;font-size:.78rem;padding:3px 10px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) nav#nav{border-top:1px solid var(--line);background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) nav#nav a{font-size:.6rem;letter-spacing:.01em;text-transform:none;font-weight:500}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) nav#nav a.on::before{display:none}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) nav#nav a.on{font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .card,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) details.sec,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .tasks,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .linkrow,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .reframe{border-radius:var(--r);border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .card.ink,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .tasks{border-color:var(--line-strong)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .card h2,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .h2,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) details.sec>summary{font-weight:700;letter-spacing:.02em;font-size:.86rem}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .tasks{overflow:hidden}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .task{border-bottom-width:1px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .trow .name{font-weight:600}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .check span{border-radius:6px;border-width:1.5px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .tag{border:0;border-radius:6px;padding:3px 7px;font-weight:700;letter-spacing:.06em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .tag.hard{background:color-mix(in srgb,var(--hard) 14%,transparent)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .tag.medium{background:color-mix(in srgb,var(--medium) 16%,transparent)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .tag.easy{background:color-mix(in srgb,var(--easy) 14%,transparent)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .tag.grade{background:var(--surface2)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .btn{border-width:1px;border-color:var(--line-strong);border-radius:10px;text-transform:none;letter-spacing:0;font-size:.86rem}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .btn.sm{font-size:.78rem;border-radius:8px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .btn.primary{border-color:var(--accent)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .btn.block{border-radius:12px;font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .seg{border:1px solid var(--line-strong);border-radius:10px;padding:2px;background:var(--surface2)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .seg button{border-radius:8px;text-transform:none;letter-spacing:0;font-size:.78rem}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .seg button+button{border-left:0}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) input:not([type=checkbox]):not([type=color]),:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) select,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) textarea{border-radius:10px;border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .scale button,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .pills button,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .tri button,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) table.cgrid td button{border-radius:7px;border-width:1px;font-family:var(--body);font-weight:600}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .stats{border:0;gap:8px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .stats .stat{border:1px solid var(--line);border-radius:10px;margin:0}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .stat .v{font-weight:700;letter-spacing:-.01em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .hero .big{font-weight:800;letter-spacing:-.03em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .blocks{gap:2px;height:8px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .blocks i{border-radius:2px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .hint{border-radius:10px;border:1px solid var(--line);border-left-width:4px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .principle::before{content:"\201C";font-family:var(--body);font-weight:900}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .principle{font-weight:500}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .goal b{font-weight:800}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .sugbar{border-radius:12px;border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .ctrls .side,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .ctrls .main{border-radius:50%}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .ctrls .side{border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .focus-card .time{font-weight:300;letter-spacing:-.04em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .focus-card .task-name{text-transform:none;font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .wstep .n{border-radius:50%;border-width:1px;font-family:var(--body);font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .wstep h3{font-weight:700;text-transform:none}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .mbox{border-radius:16px;border-width:1px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) #toast{border-radius:10px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .meter{border-radius:99px;overflow:visible}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .meter>i{border-radius:99px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) .chart svg{shape-rendering:auto}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) #splash .word{font-style:italic;font-weight:900;font-size:1.25rem;letter-spacing:.02em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) #splash .logo{display:none}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) #splash .logo-smooth{display:block}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) #splash .blocks{gap:0;height:3px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"],[data-style="studio"]) #splash .blocks i{border-radius:0}
 #splash .logo-smooth{display:none;width:84px;height:84px}
 
 /* ================================================================
@@ -702,3 +702,106 @@ table.data td{padding:8px 6px;border-bottom:var(--px) solid var(--line);vertical
 .levelup .btn{margin-top:14px}
 @keyframes lu-in{from{opacity:0;transform:scale(.97)}}
 @media (prefers-reduced-motion:reduce){.levelup{animation:none}}
+
+/* ================================================================
+   LAYOUTS  (html[data-layout])
+   A style can change structure, not only colour. "tabs" is the default bottom bar.
+   ================================================================ */
+.menu-btn,#scrim{display:none}
+.menu-btn{width:40px;height:40px;border:0;background:transparent;padding:10px;cursor:pointer;flex-direction:column;justify-content:center;gap:4px;margin-left:-8px}
+.menu-btn i{display:block;height:2px;width:20px;background:var(--ink);border-radius:2px}
+
+/* ---- rail: sidebar on wide screens, slide-out drawer on phones ---- */
+[data-layout="rail"] body{padding-bottom:env(safe-area-inset-bottom)}
+[data-layout="rail"] nav#nav{position:fixed;bottom:0;justify-content:flex-start;border-bottom:0;top:0;right:auto;width:248px;flex-direction:column;gap:2px;overflow-y:auto;border-top:0;border-right:1px solid var(--line);padding:calc(18px + env(safe-area-inset-top)) 14px 18px;background:var(--surface);backdrop-filter:none}
+[data-layout="rail"] nav#nav a{flex:0 0 auto;flex-direction:row;gap:12px;padding:11px 14px;font-size:.92rem;font-weight:500;text-transform:none;border-radius:999px;color:var(--muted)}
+[data-layout="rail"] nav#nav a::before{display:none!important}
+[data-layout="rail"] nav#nav a.on{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);font-weight:600}
+[data-layout="rail"] nav#nav a:hover{background:var(--surface2)}
+@media (max-width:899px){
+  [data-layout="rail"] .menu-btn{display:flex}
+  [data-layout="rail"] nav#nav{z-index:60;transform:translateX(-105%);transition:transform .22s ease;box-shadow:none}
+  .menu-open[data-layout="rail"] nav#nav{transform:none;box-shadow:0 0 60px rgba(0,0,0,.25)}
+  .menu-open[data-layout="rail"] #scrim{display:block;position:fixed;inset:0;z-index:55;background:rgba(20,18,40,.35)}
+}
+@media (min-width:900px){
+  [data-layout="rail"] body{padding-left:248px}
+  [data-layout="rail"] .wrap,[data-layout="rail"] .top .bar{max-width:1120px}
+  [data-layout="rail"] .studio{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:28px;align-items:start}
+  [data-layout="rail"] .s-side{position:sticky;top:84px}
+}
+@media (prefers-reduced-motion:reduce){[data-layout="rail"] nav#nav{transition:none}}
+.s-side .card{margin:14px 0}
+.s-big{font-size:3rem;font-weight:700;line-height:1;margin:10px 0 6px;letter-spacing:-.03em}
+.s-big small{font-size:1rem;color:var(--muted);font-weight:500;letter-spacing:0}
+.s-focus .btn{margin-top:12px}
+.s-week{display:flex;align-items:flex-end;gap:6px;height:72px;margin:12px 0 14px}
+.s-week i{flex:1;height:var(--h);background:var(--accent);border-radius:6px;opacity:.85;min-height:4px}
+.s-side .row.between{margin-top:6px}
+
+/* ================================================================
+   STYLE: STUDIO  (data-style="studio", layout rail)
+   Calm pastel dashboard: lavender paper, white cards with soft shadow, pill buttons.
+   ================================================================ */
+:root[data-style="studio"]{
+  --bg:#f6f5fb; --surface:#ffffff; --surface2:#efedf8; --ink:#23213a; --muted:#77738f; --line:#e6e3f0; --line-strong:#e6e3f0;
+  --accent:#6c5ce7; --accent-ink:#fff; --good:#2bb59a; --warn:#e8962c; --bad:#e05d8c; --hard:#e05d8c; --medium:#e8962c; --easy:#2bb59a;
+  --inv-bg:#ffffff; --inv-ink:#23213a; --inv-muted:#77738f; --inv-line:#e6e3f0;
+  --pixel:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --px:1px; --r:18px; --r-sm:12px; --soft:0 1px 2px rgba(35,33,58,.04),0 10px 30px -14px rgba(35,33,58,.16);
+}
+:root[data-style="studio"][data-theme="dark"]{
+  --bg:#15141f; --surface:#1e1d2b; --surface2:#272637; --ink:#ecebf5; --muted:#9b98b3; --line:#2e2d40; --line-strong:#2e2d40;
+  --accent:#8b7cf6; --good:#3fcfae; --warn:#f2ad55; --bad:#f07aa4; --hard:#f07aa4; --medium:#f2ad55; --easy:#3fcfae;
+  --inv-bg:#1e1d2b; --inv-ink:#ecebf5; --inv-muted:#9b98b3; --inv-line:#2e2d40; --soft:none;
+}
+[data-style="studio"] .title{font-style:normal;font-weight:700;text-transform:none;font-size:2rem;letter-spacing:-.02em}
+[data-style="studio"] .eyebrow{font-weight:600;letter-spacing:.1em;color:var(--accent)}
+[data-style="studio"] .top{background:var(--bg);backdrop-filter:none;border-bottom:0}
+[data-style="studio"] .brand{font-style:normal;font-weight:700;text-transform:none;letter-spacing:-.01em}
+[data-style="studio"] .brand b{color:var(--accent)}
+[data-style="studio"] .brand .mark{border-radius:8px}
+[data-style="studio"] .pill{background:var(--surface);border:0;box-shadow:var(--soft);border-radius:999px}
+[data-style="studio"] .card,[data-style="studio"] details.sec,[data-style="studio"] .tasks,[data-style="studio"] .linkrow,[data-style="studio"] .reframe,[data-style="studio"] .sugbar,[data-style="studio"] .hint,[data-style="studio"] .stats .stat{border:0;border-radius:18px;box-shadow:var(--soft);background:var(--surface)}
+[data-style="studio"] .card h2,[data-style="studio"] .h2,[data-style="studio"] details.sec>summary{font-weight:700;text-transform:none;letter-spacing:0;font-size:1rem}
+[data-style="studio"] .hint{border-left:0}
+[data-style="studio"] .hint.warn{background:color-mix(in srgb,var(--warn) 12%,var(--surface))}
+[data-style="studio"] .hint.bad{background:color-mix(in srgb,var(--bad) 12%,var(--surface))}
+[data-style="studio"] .hint.accent,[data-style="studio"] .sugbar{background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+[data-style="studio"] .btn{border:0;background:var(--surface2);border-radius:999px;font-weight:600;padding:9px 16px}
+[data-style="studio"] .btn.sm{padding:6px 12px}
+[data-style="studio"] .btn.primary{background:var(--accent);color:#fff;box-shadow:0 8px 20px -10px var(--accent)}
+[data-style="studio"] .btn.block{border-radius:999px;min-height:50px}
+[data-style="studio"] .btn.ghost{background:transparent}
+[data-style="studio"] .seg{border:0;background:var(--surface2);border-radius:999px;padding:3px}
+[data-style="studio"] .seg button{border-radius:999px}
+[data-style="studio"] .seg button.on{background:var(--surface);color:var(--accent);box-shadow:var(--soft)}
+[data-style="studio"] input:not([type=checkbox]):not([type=color]),[data-style="studio"] select,[data-style="studio"] textarea{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+[data-style="studio"] .check span{border-radius:8px;border:2px solid var(--line)}
+[data-style="studio"] .check input:checked+span{background:var(--accent);border-color:var(--accent)}
+[data-style="studio"] .tag{border:0;border-radius:999px;padding:3px 9px;text-transform:none;letter-spacing:0;font-size:.72rem}
+[data-style="studio"] .tag.hard{background:color-mix(in srgb,var(--hard) 14%,transparent)}
+[data-style="studio"] .tag.medium{background:color-mix(in srgb,var(--medium) 16%,transparent)}
+[data-style="studio"] .tag.easy{background:color-mix(in srgb,var(--easy) 14%,transparent)}
+[data-style="studio"] .blocks{height:8px;gap:4px}
+[data-style="studio"] .blocks i{border-radius:99px}
+[data-style="studio"] .hero .big{font-weight:700;color:var(--accent)}
+[data-style="studio"] .scale button,[data-style="studio"] .pills button,[data-style="studio"] .tri button,[data-style="studio"] table.cgrid td button{border-radius:999px;border:1px solid var(--line)}
+[data-style="studio"] .scale button.on,[data-style="studio"] .pills button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-style="studio"] .focus-card{background:linear-gradient(150deg,var(--accent),color-mix(in srgb,var(--accent) 60%,#e05d8c));color:#fff;border:0}
+[data-style="studio"] .focus-card .eyebrow,[data-style="studio"] .focus-card .muted,[data-style="studio"] .focus-card .mode{color:rgba(255,255,255,.8)}
+[data-style="studio"] .focus-card .time{font-weight:700;letter-spacing:-.04em}
+[data-style="studio"] .focus-card .blocks i{background:rgba(255,255,255,.25)}
+[data-style="studio"] .focus-card .blocks i.on{background:#fff}
+[data-style="studio"] .ctrls .side{border:0;background:rgba(255,255,255,.18);color:#fff}
+[data-style="studio"] .ctrls .main{background:#fff;color:var(--accent)}
+[data-style="studio"] .mbox{border-radius:22px;border:0}
+[data-style="studio"] #toast{border-radius:999px}
+[data-style="studio"] .stylepick button{border-radius:16px}
+[data-style="studio"] #splash{background:#23213a}
+[data-style="studio"] #splash .word{font-style:normal;font-weight:700;text-transform:none;order:2;font-size:1.3rem}
+[data-style="studio"] #splash .word b{color:#8b7cf6}
+[data-style="studio"] #splash .load{display:none}
+[data-style="studio"] #splash .spin{display:block;order:3;margin-top:26px;animation:aw-spin 1s linear infinite}
+[data-style="studio"] #splash .spin circle+circle{stroke:#8b7cf6}
+[data-style="studio"] #splash .ld{letter-spacing:.2em;color:#9b98b3}

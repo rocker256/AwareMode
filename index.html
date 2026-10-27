@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Aware Mode">
 <title>Aware Mode</title>
-<script>try{var s=(JSON.parse(localStorage.getItem('attackmode.data.v1')||'{}').settings)||{};document.documentElement.dataset.style=s.style||'pixel';}catch(e){}</script>
+<script>try{var s=(JSON.parse(localStorage.getItem('attackmode.data.v1')||'{}').settings)||{};var d=document.documentElement;d.dataset.style=s.style||'pixel';d.dataset.layout=({studio:'rail',terminal:'term',timeline:'timeline',deck:'deck'})[s.style]||'tabs';}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -26,8 +26,9 @@
   <div class="load"><div class="row"><span>Loading your plan</span><span id="splashPct">0%</span></div><div class="blocks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
   <div class="ld">Loading…</div>
 </div>
-<header class="top"><div class="bar"><div class="brand" id="brand">Aware <b>Mode</b></div><div class="lvl" id="lvl" hidden></div><span class="spacer"></span><span class="pill" id="streak" hidden></span></div></header>
+<header class="top"><div class="bar"><button class="menu-btn" data-act="menu" aria-label="Menu"><i></i><i></i><i></i></button><div class="brand" id="brand">Aware <b>Mode</b></div><div class="lvl" id="lvl" hidden></div><span class="spacer"></span><span class="pill" id="streak" hidden></span></div></header>
 <nav id="nav" aria-label="Sections"></nav>
+<div id="scrim"></div>
 <main id="main"><div class="wrap"><p class="muted">Loading…</p></div></main>
 <div id="modal" hidden></div>
 <div id="toast" role="status" aria-live="polite"></div>
