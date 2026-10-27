@@ -240,6 +240,7 @@ const STYLES = [
   { id: 'refresh', name: 'Refresh', note: 'Clean sans, italic titles, soft cards.', sw: ['#f4f1ea', '#fffdf8', '#e4572e', '#c2362b'] },
   { id: 'bw', name: 'Pixel B&W', note: 'Black and white only, notched pixels.', sw: ['#000000', '#6b6b6b', '#e4e4e4', '#ffffff'] },
   { id: 'simplified', name: 'Simplified', note: 'Flat and quiet. One accent, hairlines only.', sw: ['#f4f1ea', '#fffdf8', '#d8d1c2', '#151412'] },
+  { id: 'gamified', name: 'Gamified', note: 'Dark, round and bold. Three colours, mission cards.', sw: ['#0b0b0f', '#1b1b1f', '#ff4a1c', '#f4f3ef'] },
 ];
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
 function applyTheme() {
@@ -319,7 +320,7 @@ const LINE = {
   plus: '<path d="M12 5v14M5 12h14"/>',
 };
 function px(name, size = 18) {
-  if ((S.settings.style === 'refresh' || S.settings.style === 'simplified') && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
+  if (['refresh', 'simplified', 'gamified'].includes(S.settings.style) && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
   const rows = PX[name]; if (!rows) return '';
   const h = rows.length, w = rows[0].length, fills = { '#': 'currentColor', a: 'var(--accent)', c: '#f4f1ea' };
   let r = '';
@@ -345,6 +346,22 @@ function mixBar(ts) {
     <div class="legend-row"><span><i class="sq" style="background:var(--hard)"></i>${c.hard} hard</span><span><i class="sq" style="background:var(--medium)"></i>${c.medium} medium</span><span><i class="sq" style="background:var(--easy)"></i>${c.easy} easy</span>${ts.length - c.hard - c.medium - c.easy ? `<span><i class="sq" style="background:var(--surface2)"></i>${ts.length - c.hard - c.medium - c.easy} unrated</span>` : ''}</div>`;
 }
 
+/* ---------- XP + levels (only shown in the Gamified style; worked out from done tasks, nothing new is stored) ---------- */
+const XP_PER_LEVEL = 500;
+const taskXp = t => ({ hard: 30, medium: 20, easy: 10 }[kindOf(t)] || 10);
+function xpInfo() {
+  let xp = 0;
+  for (const d of Object.values(S.days)) for (const t of d.tasks || []) if (t.done && !t.movedTo) xp += taskXp(t);
+  return { xp, level: Math.floor(xp / XP_PER_LEVEL) + 1, into: xp % XP_PER_LEVEL };
+}
+function levelUp(n) {
+  const el = document.createElement('div');
+  el.className = 'levelup'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Level up');
+  el.innerHTML = `<div class="lu"><div class="ring big" style="--p:100"><b>${n}</b></div><div class="eyebrow">Level up</div><h2>Level ${n}</h2><p class="muted">Every task you finish earns XP. Keep attacking.</p><button class="btn primary block">Continue</button></div>`;
+  el.addEventListener('click', () => el.remove());
+  document.body.append(el);
+}
+
 /* ---------- nav ---------- */
 function renderNav() {
   const v = S.ui.view;
@@ -358,6 +375,11 @@ function renderNav() {
   $('#streak').innerHTML = s.n ? `${px('flame', 13)}${s.n}` : '';
   $('#streak').hidden = !s.n;
   $('#streak').title = s.n ? `${s.n}-day streak` : '';
+  const g = S.settings.style === 'gamified', x = xpInfo(), lv = $('#lvl');
+  lv.hidden = !g;
+  if (g) lv.innerHTML = `<span class="ring" style="--p:${Math.round(x.into / XP_PER_LEVEL * 100)}"><b>${x.level}</b></span><span class="lt"><b>Level ${x.level}</b><small>${x.into} / ${XP_PER_LEVEL} XP</small></span>`;
+  if (g && S.ui.lvl && x.level > S.ui.lvl) levelUp(x.level);
+  if (S.ui.lvl !== x.level) { S.ui.lvl = x.level; save(); }
 }
 
 /* ---------- task rows ---------- */
@@ -376,6 +398,7 @@ function taskRow(k, t, i, mode) {
       ${t.grade === 'g0' ? '<span class="tag grade" title="Grade 0 starter">G0</span>' : t.grade === 'g1' ? '<span class="tag grade" title="Grade 1 starter">G1</span>' : ''}
       ${kind ? `<span class="tag ${kind}">${kind}</span>` : ''}
       ${dd ? `<span class="dd" title="Predicted${today && t.ad ? ' > actual' : ''} difficulty">${dd}</span>` : ''}
+      ${S.settings.style === 'gamified' && !t.movedTo ? `<span class="xp" title="XP for finishing">+${taskXp(t)}</span>` : ''}
       <span class="chev">${px('chev', 7)}</span>
     </div>
     ${open ? taskEditor(k, t, mode) : ''}

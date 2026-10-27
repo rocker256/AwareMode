@@ -1,5 +1,5 @@
 // Offline cache for Attack Mode. Bump VERSION when shipping changes.
-const VERSION = 'aware-mode-v7';
+const VERSION = 'aware-mode-v8';
 const ASSETS = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icons/mark.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-180.png', 'fonts/silkscreen-latin-400-normal.woff2', 'fonts/silkscreen-latin-700-normal.woff2', 'fonts/ibm-plex-mono-latin-400-normal.woff2', 'fonts/ibm-plex-mono-latin-400-italic.woff2', 'fonts/ibm-plex-mono-latin-500-normal.woff2', 'fonts/ibm-plex-mono-latin-600-normal.woff2', 'fonts/inter-latin-400-normal.woff2', 'fonts/inter-latin-400-italic.woff2', 'fonts/inter-latin-500-normal.woff2', 'fonts/inter-latin-600-normal.woff2', 'fonts/inter-latin-700-normal.woff2', 'fonts/inter-latin-900-italic.woff2', 'fonts/pixelify-sans.woff2'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {

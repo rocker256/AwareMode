@@ -31,7 +31,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-:root:not([data-style="refresh"]):not([data-style="simplified"]) *{border-radius:0!important}
+:root:not([data-style="refresh"]):not([data-style="simplified"]):not([data-style="gamified"]) *{border-radius:0!important}
 [hidden]{display:none!important}
 html{font-size:var(--fs);-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--body);padding-bottom:calc(72px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
@@ -83,7 +83,7 @@ nav#nav a.on::before{content:"";position:absolute;top:-2px;left:25%;right:25%;he
 .grid{display:grid;gap:10px}
 .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
 @media (max-width:620px){.g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 details.sec{background:var(--surface);border:var(--px) solid var(--line);margin:14px 0}
 details.sec>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:10px;font-family:var(--pixel);text-transform:uppercase;font-size:.9rem}
@@ -121,7 +121,7 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .seg button{border:0;background:transparent;padding:6px 10px;font-size:.7rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;color:var(--muted)}
 .seg button+button{border-left:var(--px) solid var(--line-strong)}
 .seg button.on{background:var(--ink);color:var(--bg)}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:var(--px) solid var(--line)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;border:var(--px) solid var(--line)}
 .stats .stat{border-right:var(--px) solid var(--line);border-bottom:var(--px) solid var(--line);margin:0 -2px -2px 0}
 @media (max-width:560px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .stat{padding:10px 12px;background:var(--surface)}
@@ -331,66 +331,66 @@ table.data td{padding:8px 6px;border-bottom:var(--px) solid var(--line);vertical
   --bg:#111110; --surface:#1b1a18; --surface2:#242320; --ink:#f1ede4; --muted:#8c867b; --line:#2a2825; --line-strong:#302e2a;
   --good:#4bb47c; --warn:#e0a52c; --bad:#e85b4e; --hard:#e85b4e; --medium:#e0a52c; --easy:#4bb47c;
 }
-:is([data-style="refresh"],[data-style="simplified"]) body{font-size:15px;line-height:1.5}
-:is([data-style="refresh"],[data-style="simplified"]) .title{font-weight:900;font-style:italic;letter-spacing:-.01em;font-size:2rem}
-:is([data-style="refresh"],[data-style="simplified"]) .title::after{display:none}
-:is([data-style="refresh"],[data-style="simplified"]) .eyebrow{font-weight:600;font-size:.66rem;letter-spacing:.14em}
-:is([data-style="refresh"],[data-style="simplified"]) .brand{font-style:italic;font-weight:900;letter-spacing:0}
-:is([data-style="refresh"],[data-style="simplified"]) .top{border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(10px)}
-:is([data-style="refresh"],[data-style="simplified"]) .pill{border:1px solid var(--line-strong);border-radius:99px;font-weight:600;font-size:.78rem;padding:3px 10px}
-:is([data-style="refresh"],[data-style="simplified"]) nav#nav{border-top:1px solid var(--line);background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px)}
-:is([data-style="refresh"],[data-style="simplified"]) nav#nav a{font-size:.6rem;letter-spacing:.01em;text-transform:none;font-weight:500}
-:is([data-style="refresh"],[data-style="simplified"]) nav#nav a.on::before{display:none}
-:is([data-style="refresh"],[data-style="simplified"]) nav#nav a.on{font-weight:700}
-:is([data-style="refresh"],[data-style="simplified"]) .card,:is([data-style="refresh"],[data-style="simplified"]) details.sec,:is([data-style="refresh"],[data-style="simplified"]) .tasks,:is([data-style="refresh"],[data-style="simplified"]) .linkrow,:is([data-style="refresh"],[data-style="simplified"]) .reframe{border-radius:var(--r);border-width:1px}
-:is([data-style="refresh"],[data-style="simplified"]) .card.ink,:is([data-style="refresh"],[data-style="simplified"]) .tasks{border-color:var(--line-strong)}
-:is([data-style="refresh"],[data-style="simplified"]) .card h2,:is([data-style="refresh"],[data-style="simplified"]) .h2,:is([data-style="refresh"],[data-style="simplified"]) details.sec>summary{font-weight:700;letter-spacing:.02em;font-size:.86rem}
-:is([data-style="refresh"],[data-style="simplified"]) .tasks{overflow:hidden}
-:is([data-style="refresh"],[data-style="simplified"]) .task{border-bottom-width:1px}
-:is([data-style="refresh"],[data-style="simplified"]) .trow .name{font-weight:600}
-:is([data-style="refresh"],[data-style="simplified"]) .check span{border-radius:6px;border-width:1.5px}
-:is([data-style="refresh"],[data-style="simplified"]) .tag{border:0;border-radius:6px;padding:3px 7px;font-weight:700;letter-spacing:.06em}
-:is([data-style="refresh"],[data-style="simplified"]) .tag.hard{background:color-mix(in srgb,var(--hard) 14%,transparent)}
-:is([data-style="refresh"],[data-style="simplified"]) .tag.medium{background:color-mix(in srgb,var(--medium) 16%,transparent)}
-:is([data-style="refresh"],[data-style="simplified"]) .tag.easy{background:color-mix(in srgb,var(--easy) 14%,transparent)}
-:is([data-style="refresh"],[data-style="simplified"]) .tag.grade{background:var(--surface2)}
-:is([data-style="refresh"],[data-style="simplified"]) .btn{border-width:1px;border-color:var(--line-strong);border-radius:10px;text-transform:none;letter-spacing:0;font-size:.86rem}
-:is([data-style="refresh"],[data-style="simplified"]) .btn.sm{font-size:.78rem;border-radius:8px}
-:is([data-style="refresh"],[data-style="simplified"]) .btn.primary{border-color:var(--accent)}
-:is([data-style="refresh"],[data-style="simplified"]) .btn.block{border-radius:12px;font-weight:700}
-:is([data-style="refresh"],[data-style="simplified"]) .seg{border:1px solid var(--line-strong);border-radius:10px;padding:2px;background:var(--surface2)}
-:is([data-style="refresh"],[data-style="simplified"]) .seg button{border-radius:8px;text-transform:none;letter-spacing:0;font-size:.78rem}
-:is([data-style="refresh"],[data-style="simplified"]) .seg button+button{border-left:0}
-:is([data-style="refresh"],[data-style="simplified"]) .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
-:is([data-style="refresh"],[data-style="simplified"]) input:not([type=checkbox]):not([type=color]),:is([data-style="refresh"],[data-style="simplified"]) select,:is([data-style="refresh"],[data-style="simplified"]) textarea{border-radius:10px;border-width:1px}
-:is([data-style="refresh"],[data-style="simplified"]) .scale button,:is([data-style="refresh"],[data-style="simplified"]) .pills button,:is([data-style="refresh"],[data-style="simplified"]) .tri button,:is([data-style="refresh"],[data-style="simplified"]) table.cgrid td button{border-radius:7px;border-width:1px;font-family:var(--body);font-weight:600}
-:is([data-style="refresh"],[data-style="simplified"]) .stats{border:0;gap:8px}
-:is([data-style="refresh"],[data-style="simplified"]) .stats .stat{border:1px solid var(--line);border-radius:10px;margin:0}
-:is([data-style="refresh"],[data-style="simplified"]) .stat .v{font-weight:700;letter-spacing:-.01em}
-:is([data-style="refresh"],[data-style="simplified"]) .hero .big{font-weight:800;letter-spacing:-.03em}
-:is([data-style="refresh"],[data-style="simplified"]) .blocks{gap:2px;height:8px}
-:is([data-style="refresh"],[data-style="simplified"]) .blocks i{border-radius:2px}
-:is([data-style="refresh"],[data-style="simplified"]) .hint{border-radius:10px;border:1px solid var(--line);border-left-width:4px}
-:is([data-style="refresh"],[data-style="simplified"]) .principle::before{content:"\201C";font-family:var(--body);font-weight:900}
-:is([data-style="refresh"],[data-style="simplified"]) .principle{font-weight:500}
-:is([data-style="refresh"],[data-style="simplified"]) .goal b{font-weight:800}
-:is([data-style="refresh"],[data-style="simplified"]) .sugbar{border-radius:12px;border-width:1px}
-:is([data-style="refresh"],[data-style="simplified"]) .ctrls .side,:is([data-style="refresh"],[data-style="simplified"]) .ctrls .main{border-radius:50%}
-:is([data-style="refresh"],[data-style="simplified"]) .ctrls .side{border-width:1px}
-:is([data-style="refresh"],[data-style="simplified"]) .focus-card .time{font-weight:300;letter-spacing:-.04em}
-:is([data-style="refresh"],[data-style="simplified"]) .focus-card .task-name{text-transform:none;font-weight:700}
-:is([data-style="refresh"],[data-style="simplified"]) .wstep .n{border-radius:50%;border-width:1px;font-family:var(--body);font-weight:700}
-:is([data-style="refresh"],[data-style="simplified"]) .wstep h3{font-weight:700;text-transform:none}
-:is([data-style="refresh"],[data-style="simplified"]) .mbox{border-radius:16px;border-width:1px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-:is([data-style="refresh"],[data-style="simplified"]) #toast{border-radius:10px}
-:is([data-style="refresh"],[data-style="simplified"]) .meter{border-radius:99px;overflow:visible}
-:is([data-style="refresh"],[data-style="simplified"]) .meter>i{border-radius:99px}
-:is([data-style="refresh"],[data-style="simplified"]) .chart svg{shape-rendering:auto}
-:is([data-style="refresh"],[data-style="simplified"]) #splash .word{font-style:italic;font-weight:900;font-size:1.25rem;letter-spacing:.02em}
-:is([data-style="refresh"],[data-style="simplified"]) #splash .logo{display:none}
-:is([data-style="refresh"],[data-style="simplified"]) #splash .logo-smooth{display:block}
-:is([data-style="refresh"],[data-style="simplified"]) #splash .blocks{gap:0;height:3px}
-:is([data-style="refresh"],[data-style="simplified"]) #splash .blocks i{border-radius:0}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) body{font-size:15px;line-height:1.5}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .title{font-weight:900;font-style:italic;letter-spacing:-.01em;font-size:2rem}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .title::after{display:none}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .eyebrow{font-weight:600;font-size:.66rem;letter-spacing:.14em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .brand{font-style:italic;font-weight:900;letter-spacing:0}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .top{border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(10px)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .pill{border:1px solid var(--line-strong);border-radius:99px;font-weight:600;font-size:.78rem;padding:3px 10px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) nav#nav{border-top:1px solid var(--line);background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) nav#nav a{font-size:.6rem;letter-spacing:.01em;text-transform:none;font-weight:500}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) nav#nav a.on::before{display:none}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) nav#nav a.on{font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .card,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) details.sec,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tasks,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .linkrow,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .reframe{border-radius:var(--r);border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .card.ink,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tasks{border-color:var(--line-strong)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .card h2,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .h2,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) details.sec>summary{font-weight:700;letter-spacing:.02em;font-size:.86rem}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tasks{overflow:hidden}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .task{border-bottom-width:1px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .trow .name{font-weight:600}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .check span{border-radius:6px;border-width:1.5px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tag{border:0;border-radius:6px;padding:3px 7px;font-weight:700;letter-spacing:.06em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tag.hard{background:color-mix(in srgb,var(--hard) 14%,transparent)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tag.medium{background:color-mix(in srgb,var(--medium) 16%,transparent)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tag.easy{background:color-mix(in srgb,var(--easy) 14%,transparent)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tag.grade{background:var(--surface2)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .btn{border-width:1px;border-color:var(--line-strong);border-radius:10px;text-transform:none;letter-spacing:0;font-size:.86rem}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .btn.sm{font-size:.78rem;border-radius:8px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .btn.primary{border-color:var(--accent)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .btn.block{border-radius:12px;font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .seg{border:1px solid var(--line-strong);border-radius:10px;padding:2px;background:var(--surface2)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .seg button{border-radius:8px;text-transform:none;letter-spacing:0;font-size:.78rem}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .seg button+button{border-left:0}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) input:not([type=checkbox]):not([type=color]),:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) select,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) textarea{border-radius:10px;border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .scale button,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .pills button,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .tri button,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) table.cgrid td button{border-radius:7px;border-width:1px;font-family:var(--body);font-weight:600}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .stats{border:0;gap:8px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .stats .stat{border:1px solid var(--line);border-radius:10px;margin:0}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .stat .v{font-weight:700;letter-spacing:-.01em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .hero .big{font-weight:800;letter-spacing:-.03em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .blocks{gap:2px;height:8px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .blocks i{border-radius:2px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .hint{border-radius:10px;border:1px solid var(--line);border-left-width:4px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .principle::before{content:"\201C";font-family:var(--body);font-weight:900}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .principle{font-weight:500}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .goal b{font-weight:800}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .sugbar{border-radius:12px;border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .ctrls .side,:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .ctrls .main{border-radius:50%}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .ctrls .side{border-width:1px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .focus-card .time{font-weight:300;letter-spacing:-.04em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .focus-card .task-name{text-transform:none;font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .wstep .n{border-radius:50%;border-width:1px;font-family:var(--body);font-weight:700}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .wstep h3{font-weight:700;text-transform:none}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .mbox{border-radius:16px;border-width:1px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #toast{border-radius:10px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .meter{border-radius:99px;overflow:visible}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .meter>i{border-radius:99px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) .chart svg{shape-rendering:auto}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #splash .word{font-style:italic;font-weight:900;font-size:1.25rem;letter-spacing:.02em}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #splash .logo{display:none}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #splash .logo-smooth{display:block}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #splash .blocks{gap:0;height:3px}
+:is([data-style="refresh"],[data-style="simplified"],[data-style="gamified"]) #splash .blocks i{border-radius:0}
 #splash .logo-smooth{display:none;width:84px;height:84px}
 
 /* ================================================================
@@ -455,7 +455,7 @@ table.data td{padding:8px 6px;border-bottom:var(--px) solid var(--line);vertical
 [data-style="bw"] #splash .blocks i.on{background:#f2f2f2}
 
 /* style picker in Settings */
-.stylepick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stylepick{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .stylepick button{border:var(--px) solid var(--line);background:var(--surface);padding:10px;cursor:pointer;text-align:left;display:grid;gap:8px;color:var(--ink)}
 .stylepick button.on{border-color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
 .stylepick .sw{display:flex;height:34px}
@@ -583,3 +583,122 @@ table.data td{padding:8px 6px;border-bottom:var(--px) solid var(--line);vertical
 [data-style="simplified"] .ctrls .side{border:1px solid var(--line);width:64px;height:52px;font-weight:600}
 [data-style="simplified"] .ctrls .main{width:120px;height:52px;color:#fff}
 [data-style="simplified"] .stylepick button,[data-style="refresh"] .stylepick button{border-radius:12px}
+
+/* ================================================================
+   STYLE: GAMIFIED  (html[data-style="gamified"])
+   From the minimal gamified board: ink, paper and one hot accent; greys are the
+   foreground at low alpha. Inter 400/500/700, radius 16 controls / 20 cards / 24 sheets,
+   hairlines, no shadows. The only gradient is the accent glow on the hero card.
+   ================================================================ */
+:root[data-style="gamified"]{
+  --fg:#0b0b0f; --bg:#f4f3ef; --ink:#0b0b0f; --ink2:rgba(11,11,15,.62);
+  --surface:rgba(11,11,15,.06); --surface2:rgba(11,11,15,.06); --muted:rgba(11,11,15,.62); --line:rgba(11,11,15,.12); --line-strong:rgba(11,11,15,.12);
+  --good:#0b0b0f; --warn:#0b0b0f; --bad:var(--accent); --hard:var(--accent); --medium:var(--ink); --easy:rgba(11,11,15,.62);
+  --inv-bg:var(--surface); --inv-ink:var(--ink); --inv-muted:var(--muted); --inv-line:var(--line);
+  --pixel:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --px:1px; --r:20px; --r-sm:16px;
+}
+:root[data-style="gamified"][data-theme="dark"]{
+  --fg:#f4f3ef; --bg:#0b0b0f; --ink:#f4f3ef; --ink2:rgba(244,243,239,.62);
+  --surface:rgba(244,243,239,.06); --surface2:rgba(244,243,239,.06); --muted:rgba(244,243,239,.62); --line:rgba(244,243,239,.12); --line-strong:rgba(244,243,239,.12);
+  --good:#f4f3ef; --warn:#f4f3ef; --medium:var(--ink); --easy:rgba(244,243,239,.62);
+}
+[data-style="gamified"] body{font-size:16px;line-height:1.4}
+[data-style="gamified"] .title{font-style:normal;font-weight:700;text-transform:none;font-size:1.75rem;letter-spacing:-.01em}
+[data-style="gamified"] .eyebrow,[data-style="gamified"] .card h2,[data-style="gamified"] .h2,[data-style="gamified"] details.sec>summary{font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+[data-style="gamified"] .top,[data-style="gamified"] nav#nav{background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none}
+[data-style="gamified"] .top{border-bottom:0}
+[data-style="gamified"] .brand{font-style:normal;font-weight:700;text-transform:none;font-size:1rem}
+[data-style="gamified"] .brand b{color:var(--ink)}
+[data-style="gamified"] .brand .mark{filter:grayscale(1);border-radius:8px}
+[data-style="gamified"] .pill{border:0;background:var(--surface);border-radius:99px;font-weight:700;padding:5px 12px}
+[data-style="gamified"] .pill .pxi{color:var(--accent)}
+[data-style="gamified"] nav#nav{border-top:1px solid var(--line)}
+[data-style="gamified"] nav#nav a{font-size:.62rem;font-weight:500}
+[data-style="gamified"] nav#nav a.on{color:var(--accent);font-weight:700}
+[data-style="gamified"] .card,[data-style="gamified"] details.sec,[data-style="gamified"] .linkrow,[data-style="gamified"] .reframe,[data-style="gamified"] .sugbar,[data-style="gamified"] .hint,[data-style="gamified"] .stats .stat{background:var(--surface);border:0;border-radius:20px;box-shadow:none}
+[data-style="gamified"] .card:has(>.hero),[data-style="gamified"] .focus-card{background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent)}
+[data-style="gamified"] .tasks{background:transparent;border:0;border-radius:0}
+[data-style="gamified"] .task{border-bottom:1px solid var(--line)}
+[data-style="gamified"] .trow{padding-left:0;padding-right:0}
+[data-style="gamified"] .trow .name{font-weight:500}
+[data-style="gamified"] .trow .dd{font-family:var(--body);color:var(--muted)}
+[data-style="gamified"] .check span{border-radius:50%!important;width:26px;height:26px;border:1.5px solid var(--muted);background:transparent}
+[data-style="gamified"] .check input:checked+span{background:var(--accent);border-color:var(--accent)}
+[data-style="gamified"] .tag{border:0;background:transparent;padding:0 0 0 12px;position:relative;text-transform:none;letter-spacing:0;font-size:.75rem;font-weight:500;color:var(--muted)}
+[data-style="gamified"] .tag::before{content:"";position:absolute;left:0;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:currentColor}
+[data-style="gamified"] .tag.hard::before{background:var(--accent)}
+[data-style="gamified"] .tag.medium::before{background:var(--ink)}
+[data-style="gamified"] .tag.easy::before{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
+[data-style="gamified"] .tag.grade::before{display:none}
+[data-style="gamified"] .tag.grade{padding-left:0}
+[data-style="gamified"] .btn{border:0;background:var(--surface);border-radius:16px;font-weight:700;min-height:44px;font-size:.9rem}
+[data-style="gamified"] .btn.sm{min-height:34px;border-radius:12px;font-size:.8rem}
+[data-style="gamified"] .btn.primary{background:var(--accent);color:#fff}
+[data-style="gamified"] .btn.ghost{background:transparent;color:var(--muted)}
+[data-style="gamified"] .btn.danger{background:transparent;color:var(--accent)}
+[data-style="gamified"] .btn.block{border-radius:16px;min-height:52px}
+[data-style="gamified"] .seg{border:0;background:var(--surface);border-radius:16px;padding:4px}
+[data-style="gamified"] .seg button{border-radius:12px;font-weight:500;font-size:.8rem;color:var(--muted)}
+[data-style="gamified"] .seg button.on{background:var(--ink);color:var(--bg);box-shadow:none;font-weight:700}
+[data-style="gamified"] input:not([type=checkbox]):not([type=color]),[data-style="gamified"] select,[data-style="gamified"] textarea{background:var(--surface);border:1px solid var(--line);border-radius:16px;min-height:44px}
+[data-style="gamified"] select option{background:var(--bg);color:var(--ink)}
+[data-style="gamified"] .scale button,[data-style="gamified"] .pills button,[data-style="gamified"] .tri button,[data-style="gamified"] table.cgrid td button{border-radius:12px;border:0;background:var(--surface)}
+[data-style="gamified"] .scale button.on,[data-style="gamified"] .pills button.on,[data-style="gamified"] .tri button.on,[data-style="gamified"] table.cgrid td button.y{background:var(--accent);color:#fff}
+[data-style="gamified"] .stats{gap:8px}
+[data-style="gamified"] .stat .v{font-weight:700}
+[data-style="gamified"] .hero .big{font-weight:700;color:var(--accent)}
+[data-style="gamified"] .blocks{height:6px;gap:3px}
+[data-style="gamified"] .blocks i{border-radius:2px;background:var(--line)}
+[data-style="gamified"] .blocks i.on{background:var(--accent)}
+[data-style="gamified"] .blocks i.h{background:var(--accent)}
+[data-style="gamified"] .blocks i.m{background:var(--ink)}
+[data-style="gamified"] .blocks i.e{background:var(--muted)}
+[data-style="gamified"] .hint{border-left:0}
+[data-style="gamified"] .hint.warn,[data-style="gamified"] .hint.bad{box-shadow:inset 3px 0 0 var(--accent)}
+[data-style="gamified"] .sugbar{box-shadow:inset 0 0 0 1px var(--accent)}
+[data-style="gamified"] .mbox{background:var(--bg);border-radius:24px;border:1px solid var(--line);box-shadow:none}
+[data-style="gamified"] #toast{border-radius:16px;box-shadow:none}
+[data-style="gamified"] .principle::before{color:var(--accent)}
+[data-style="gamified"] .meter>i{background:var(--accent)!important}
+/* Focus: big bold timer on the glowing mission card */
+[data-style="gamified"] .focus-card .task-name{font-weight:700;font-size:1.3rem;text-transform:none}
+[data-style="gamified"] .focus-card .time{font-weight:700;letter-spacing:-.03em;font-size:clamp(3.4rem,17vw,5rem)}
+[data-style="gamified"] .focus-card .mode{color:var(--accent);font-weight:700;letter-spacing:.1em}
+[data-style="gamified"] .focus-card .mode.break{color:var(--muted)}
+[data-style="gamified"] .ctrls .side{border:0;background:var(--surface);border-radius:50%;font-weight:700}
+[data-style="gamified"] .ctrls .main{border-radius:50%;color:#fff}
+[data-style="gamified"] .stylepick button{border-radius:16px}
+/* Splash: grey mark, name, a thin accent line filling */
+[data-style="gamified"] #splash{background:#0b0b0f}
+[data-style="gamified"] #splash .logo-img{filter:grayscale(1);mix-blend-mode:lighten}
+[data-style="gamified"] #splash .word{order:2;font-style:normal;font-weight:700;text-transform:none;font-size:1.15rem;letter-spacing:0}
+[data-style="gamified"] #splash .word b{color:#f4f3ef}
+[data-style="gamified"] #splash .load{order:3;width:120px;margin:22px 0 0}
+[data-style="gamified"] #splash .blocks{height:3px;gap:0;margin:0;border-radius:2px;overflow:hidden}
+[data-style="gamified"] #splash .blocks i{background:rgba(244,243,239,.12)}
+[data-style="gamified"] #splash .blocks i.on{background:var(--accent)}
+:root[data-style="gamified"] #splash .ld,:root[data-style="gamified"] #splash .spin{display:none}
+[data-style="gamified"] .tag.hard,[data-style="gamified"] .tag.medium,[data-style="gamified"] .tag.easy,[data-style="gamified"] .tag.grade{background:transparent}
+
+/* Gamified: level ring in the top bar, XP per task, level-up sheet */
+.lvl,.xp{display:none}
+[data-style="gamified"] .lvl:not([hidden]){display:flex;align-items:center;gap:10px;min-width:0}
+[data-style="gamified"] .top .brand{display:none}
+.ring{--sz:40px;position:relative;width:var(--sz);height:var(--sz);flex:0 0 auto;display:grid;place-items:center;border-radius:50%}
+.ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p,0)*1%),var(--line) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px))}
+.ring b{font-weight:700;font-size:.95rem}
+.lvl .lt{display:grid;line-height:1.2;white-space:nowrap}
+.lvl .lt b{font-size:.9rem}
+.lvl .lt small{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+[data-style="gamified"] .xp{display:inline;font-size:.8rem;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+[data-style="gamified"] .task.done .xp{color:var(--accent)}
+.levelup{position:fixed;inset:0;z-index:150;background:color-mix(in srgb,var(--bg) 92%,transparent);display:grid;place-items:center;padding:24px;animation:lu-in .25s ease-out}
+.levelup .lu{width:min(340px,100%);text-align:center;display:grid;justify-items:center;gap:10px}
+.levelup .ring.big{--sz:132px;margin-bottom:12px}
+.levelup .ring.big b{font-size:3.4rem;color:var(--accent)}
+.levelup .ring.big::before{-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 6px),#000 calc(100% - 5.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 6px),#000 calc(100% - 5.5px))}
+.levelup h2{font-size:1.75rem;font-weight:700}
+.levelup .btn{margin-top:14px}
+@keyframes lu-in{from{opacity:0;transform:scale(.97)}}
+@media (prefers-reduced-motion:reduce){.levelup{animation:none}}
