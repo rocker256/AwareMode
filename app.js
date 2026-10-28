@@ -245,6 +245,7 @@ const STYLES = [
   { id: 'timeline', name: 'Timeline', layout: 'timeline', fixedAccent: true, note: 'Your day by the hour. Bold colour blocks, + button.', sw: ['#fffaf0', '#ff6b35', '#2a4bff', '#00b37e'] },
   { id: 'deck', name: 'Deck', layout: 'deck', fixedAccent: true, note: 'One big card at a time. Swipe through your day.', sw: ['#ffe600', '#111111', '#ffffff', '#ff3d00'] },
   { id: 'gamified', name: 'Gamified', note: 'Dark, round and bold. Three colours, mission cards.', sw: ['#0b0b0f', '#1b1b1f', '#ff4a1c', '#f4f3ef'] },
+  { id: 'cyberpunk', name: 'Cyberpunk', layout: 'cyber', fixedAccent: true, note: 'Neon HUD. Cut panels, terminal data, one cyan action.', sw: ['#05040A', '#15131F', '#00F0FF', '#FF2BD6'] },
 ];
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
 function applyTheme() {
@@ -260,7 +261,7 @@ function applyTheme() {
   if (def.id === 'bw' || def.fixedAccent) root.style.removeProperty('--accent'); else root.style.setProperty('--accent', st.accent);
   if (root.dataset.style === 'pixel') root.style.setProperty('--hard', st.accent); else root.style.removeProperty('--hard');
   root.style.setProperty('--fs', (st.fontScale || 100) + '%');
-  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = dark ? '#0f0e0d' : '#f4f1ea';
+  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = def.id === 'cyberpunk' ? '#0C0B14' : dark ? '#0f0e0d' : '#f4f1ea';
   document.title = st.appName || 'Aware Mode';
 }
 mq.addEventListener?.('change', applyTheme);
@@ -282,8 +283,18 @@ function modal(html, buttons, getVal) {
 }
 const confirmBox = (msg, ok = 'Yes', cls = 'primary') => modal(`<p>${msg}</p>`, [{ label: 'Cancel', value: false, cls: 'ghost' }, { label: ok, value: true, cls }]);
 
+// Cyberpunk shows long sections as a header with a count, collapsed until you open them
+const CY_CLOSED = ['factors', 'journal', 'sugs', 'ifthen', 's-labels', 's-journal', 's-reframe', 's-loading', 's-principles', 's-tabs'];
+const CY_COUNT = {
+  factors: () => S.settings.factors.length, journal: () => S.settings.journalPrompts.length, sugs: () => recurringTasks(addDays(todayKey(), 1)).length,
+  ifthen: () => S.woops.filter(w => w.active && (w.obstacle || w.plan)).length, 's-labels': () => 8, 's-journal': () => S.settings.journalPrompts.length,
+  's-reframe': () => S.settings.reframePrompts.length, 's-loading': () => S.settings.loadingLines.length, 's-principles': () => S.settings.principles.length,
+  's-tabs': () => S.settings.tabs.length, 's-factors': () => S.settings.factors.length,
+};
 function sec(id, title, body, extra = '') {
-  const open = S.ui.open[id] !== false;
+  const cy = S.settings.style === 'cyberpunk';
+  const open = cy && S.ui.open[id] === undefined && CY_CLOSED.includes(id) ? false : S.ui.open[id] !== false;
+  if (cy && CY_COUNT[id] && !extra) extra = `<span class="cnt">${pad(CY_COUNT[id]())}</span>`;
   return `<details class="sec" data-sec="${id}" ${open ? 'open' : ''}><summary>${title}${extra}</summary><div class="body">${body}</div></details>`;
 }
 function scale(path, val, tgt) {
@@ -327,7 +338,29 @@ const LINE = {
   chev: '<path d="M9 6l6 6-6 6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
 };
+// Cyberpunk line icons (Lucide-style, 2px stroke)
+const CY = {
+  today: '<path d="M4 7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3zM4 10h16M8 2v4M16 2v4M9 15l2 2 4-4"/>',
+  plan: '<path d="M12 2v6M4.93 10.93l1.41 1.41M2 18h2M20 18h2M19.07 10.93l-1.41 1.41M22 22H2M8 6l4-4 4 4M16 18a4 4 0 0 0-8 0"/>',
+  focus: '<path d="M10 2h4M12 14l3-3"/><circle cx="12" cy="14" r="8"/>',
+  woop: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  manual: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2zM22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+  insights: '<path d="M3 3v18h18M18 17V9M13 17V5M8 17v-3"/>',
+  history: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5M12 7v5l4 2"/>',
+  settings: '<path d="M20 7h-9M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  play: '<path d="M6 3l14 9-14 9z"/>', pause: '<path d="M7 4h3v16H7zM14 4h3v16h-3z"/>', skip: '<path d="M5 4l10 8-10 8zM19 5v14"/>',
+  reset: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5"/>',
+  chev: '<path d="M9 18l6-6-6-6"/>', cl: '<path d="M15 18l-6-6 6-6"/>', cd: '<path d="M6 9l6 6 6-6"/>',
+  plus: '<path d="M5 12h14M12 5v14"/>', check: '<path d="M20 6L9 17l-5-5"/>', x: '<path d="M18 6L6 18M6 6l12 12"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  print: '<path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/>',
+  cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', zap: '<path d="M13 2L3 14h9l-1 8 10-12h-9z"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/>',
+  carry: '<path d="M15 10l5 5-5 5M4 4v7a4 4 0 0 0 4 4h12"/>', repeat: '<path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/>',
+};
 function px(name, size = 18) {
+  if (S.settings.style === 'cyberpunk' && CY[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${CY[name]}</svg>`;
   if (['refresh', 'simplified', 'gamified', 'studio', 'timeline', 'deck'].includes(S.settings.style) && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
   const rows = PX[name]; if (!rows) return '';
   const h = rows.length, w = rows[0].length, fills = { '#': 'currentColor', a: 'var(--accent)', c: '#f4f1ea' };
@@ -442,12 +475,12 @@ function taskEditor(k, t, mode) {
     </div>
     ${meta ? `<div class="meta">${meta}</div>` : ''}
     <div class="grid g2">
-      <label class="f"><span>Starter grade</span>
+      ${st.style === 'cyberpunk' ? `<div class="f cy-grade"><span>Starter grade</span><div class="seg">${[['full', 'Full task'], ['g1', `Grade 1: ${st.timer.starterG1}-min version`], ['g0', `Grade 0: ${st.timer.starterG0}-min version`]].map(([v, l]) => `<button type="button" class="${(t.grade || 'full') === v ? 'on' : ''}" data-act="setGrade" data-k="${k}" data-id="${t.id}" data-v="${v}">${l}</button>`).join('')}</div></div>` : `<label class="f"><span>Starter grade</span>
         <select data-bind="${p}grade" data-rr>
           <option value="full" ${t.grade === 'full' ? 'selected' : ''}>Full task</option>
           <option value="g1" ${t.grade === 'g1' ? 'selected' : ''}>Grade 1: ${st.timer.starterG1}-min version</option>
           <option value="g0" ${t.grade === 'g0' ? 'selected' : ''}>Grade 0: ${st.timer.starterG0}-min version</option>
-        </select></label>
+        </select></label>`}
       <label class="f"><span>Notes</span><textarea data-bind="${p}notes" rows="1" style="min-height:38px" placeholder="Obstacles, time spent, why">${esc(t.notes)}</textarea></label>
     </div>
     <div class="row">
@@ -819,7 +852,7 @@ V.insights = () => {
   const ids = S.rules.filter(r => r.active).map(r => r.id);
   const focus = S.sessions.filter(s => s.d >= keys[0] && s.type !== 'break').reduce((a, s) => a + s.m, 0);
   let h = `<div class="eyebrow">Track · reflect · adjust</div><h1 class="title"><u>Insights</u></h1>
-    <div class="seg" style="margin:10px 0">${[7, 14, 30, 90].map(r => `<button class="${n === r ? 'on' : ''}" data-act="range" data-v="${r}">${r} days</button>`).join('')}</div>`;
+    <div class="seg" style="margin:10px 0">${[7, 14, 30, 90].map(r => `<button class="${n === r ? 'on' : ''}" data-act="range" data-v="${r}">${r}<span class="u"> days</span></button>`).join('')}</div>`;
   h += `<div class="card"><div class="stats">
     <div class="stat"><div class="v">${pct(comp)}</div><div class="k">Completion</div></div>
     <div class="stat"><div class="v">${fmt1(avg(ads))}</div><div class="k">Avg actual diff.</div></div>
@@ -1125,6 +1158,151 @@ document.addEventListener('touchend', e => {
   if (dx > 90) ACT.deckDone(c); else if (dx < -90) ACT.deckSkip();
 });
 
+/* ---------- Cyberpunk (cyber layout): HUD screens from the Cyberpunk board ---------- */
+const cyLed = c => `<i class="led ${c}"></i>`;
+const cyBlocks = (n, tgt) => `<div class="cy-blk">${Array.from({ length: 10 }, (_, i) => `<i class="${i < n ? 'on' : ''}${i === tgt - 1 ? ' t' : ''}"></i>`).join('')}</div>`;
+function cyMix(ts, max) {
+  const c = mix(ts), rest = Math.max(0, (max || ts.length) - c.hard - c.medium - c.easy);
+  return `<div class="cy-mix">${'<i class="h"></i>'.repeat(c.hard)}${'<i class="m"></i>'.repeat(c.medium)}${'<i class="e"></i>'.repeat(c.easy)}${rest ? `<i class="x" style="flex:${rest}"></i>` : ''}</div>`;
+}
+function cyAlerts(list) {
+  if (!list.length) return '';
+  const led = { accent: 'cy', warn: 'md', bad: 'hd', good: 'ez', '': 'md' };
+  return `<div class="cy-alerts">${list.map(([c, m]) => `<div>${cyLed(led[c] || 'md')}<span>${m}</span></div>`).join('')}</div>`;
+}
+function cyRules(k) {
+  const rules = S.rules.filter(r => r.active);
+  if (!rules.length) return `<div class="empty">No rules yet. Write your company policies in the <a href="#manual">Manual</a>.</div>`;
+  const d = S.days[k] || { rules: {} };
+  return rules.map(r => {
+    const v = d.rules[r.id];
+    return `<div class="rule-row"><div class="t"><b>${esc(r.title || 'Untitled rule')}</b>${r.detail ? `<div class="small muted">${esc(r.detail)}</div>` : ''}</div>
+      <div class="seg cy-ck"><button class="yes ${v === true ? 'on' : ''}" data-act="ruleSet" data-k="${k}" data-id="${r.id}" data-v="1">${px('check', 14)}Followed</button><button class="no ${v === false ? 'on' : ''}" data-act="ruleSet" data-k="${k}" data-id="${r.id}" data-v="0">${px('x', 14)}Broken</button></div></div>`;
+  }).join('');
+}
+function cyCompPill(k) {
+  const ids = S.rules.filter(r => r.active).map(r => r.id), d = S.days[k] || { rules: {} };
+  const c = compliance([k], ids); if (c == null) return '';
+  const yes = ids.filter(id => d.rules[id] === true).length, tot = ids.filter(id => d.rules[id] != null).length;
+  return ` <span class="pill cy-comp ${c >= S.settings.complianceTarget ? 'ok' : ''}">${yes}/${tot} · ${pct(c)}</span>`;
+}
+LV.cyber = {
+  attack() {
+    const st = S.settings, t = todayKey(), k = S.ui.date || t;
+    const ts = activeTasks(k), status = dayStatus(k), d = S.days[k] || { tasks: [] };
+    const done = ts.filter(x => x.done).length, pctDone = ts.length ? Math.round(done / ts.length * 100) : 0;
+    const ad = dayAvg(k, 'ad'), pd = dayAvg(k, 'pd');
+    const mins = S.sessions.filter(s => s.d === k && s.type !== 'break').reduce((a, s) => a + s.m, 0);
+    const reg = regression(), tomorrowEmpty = !activeTasks(addDays(t, 1)).length;
+    let h = '';
+    if (st.showPrinciple && st.principles.length) h += `<div class="cy-tick"><span>Principle${px('chev', 12)}</span><p>${esc(st.principles[(parseKey(k).getTime() / 864e5 | 0) % st.principles.length])}</p></div>`;
+    h += `<div class="dayhead"><div><div class="eyebrow">${k === t ? 'Attack today' : k > t ? 'Planned day' : 'Past day'}</div>
+      <h1 class="title">${k === t ? 'Today' : esc(niceDate(k, { weekday: 'short' }))}</h1></div>
+      <div class="row no-print">${k !== t ? '<button class="btn sm" data-act="goToday">Today</button>' : ''}<button class="btn sm" data-act="goHistory">${px('history', 14)}History</button>${NATIVE ? '' : `<button class="btn sm" data-act="print">${px('print', 14)}Print sheet</button>`}</div></div>
+    <div class="cy-date no-print"><button class="btn icon" data-act="shiftDate" data-n="-1" aria-label="Previous day">${px('cl', 18)}</button>
+      <label class="cy-pick" data-act="pickOpen">${px('cal', 14)}<span>${esc(parseKey(k).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }))}</span>${px('cd', 14)}<input type="date" value="${k}" data-act-change="pickDate" aria-label="Pick date"></label>
+      <button class="btn icon" data-act="shiftDate" data-n="1" aria-label="Next day">${px('chev', 18)}</button></div>`;
+    const al = [];
+    if (reg && (reg.level === 'bad' || reg.level === 'warn') && k === t) al.push([reg.level, `${esc(reg.msg)} <a href="#manual">Open manual</a>`]);
+    if (k === t && new Date().getHours() >= st.planReminderHour && tomorrowEmpty) al.push(['accent', 'Plan tomorrow before today ends. <a href="#plan">Build tomorrow</a>']);
+    if (status !== 'normal') al.push([status === 'rest' ? 'good' : '', status === 'rest' ? "Rest day. Recovery is part of the system and it won't break your streak." : 'Grace day. Life happened. The streak is protected; do what you can.']);
+    dayHints(k).forEach(([c, m]) => al.push([c, esc(m)]));
+    h += cyAlerts(al);
+    h += `<div class="cy-br"><div class="card cy-hero">
+      <div class="hero"><div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${done} of ${ts.length} done</div></div>
+        <div class="cy-meters">
+          <div><div class="row between"><span class="lbl">Planned load</span><b>${pd != null ? Math.round(pd) + '/10' : '–'}</b></div>${cyBlocks(Math.round(pd || 0), st.targetDifficulty)}</div>
+          <div><div class="row between"><span class="lbl">Actual load</span><b class="on">${ad != null ? Math.round(ad) + '/10' : '–'}</b></div>${cyBlocks(Math.round(ad || 0), st.targetDifficulty)}</div>
+          <div><div class="row between"><span class="lbl">Mix</span><span class="muted">target ${st.hardTasksTarget} hard</span></div>${cyMix(ts)}</div>
+        </div></div>
+      <div class="row cy-daytype"><div class="seg" role="group" aria-label="Day type">${['normal', 'grace', 'rest'].map(s => `<button class="${status === s ? 'on' : ''}" data-act="setStatus" data-k="${k}" data-v="${s}"><i class="led"></i>${s === 'normal' ? 'Attack' : s === 'grace' ? 'Grace' : 'Rest'}</button>`).join('')}</div>
+        <span class="cy-min"><b>${mins}</b> min focused</span></div>
+    </div></div>`;
+    h += `<div class="cy-lh"><span class="eyebrow">Tasks · ${ts.length}</span><span class="cy-goal">Next day attack goal <b>${st.targetDifficulty}/10</b></span></div>
+      <div class="tasks">${d.tasks.length ? d.tasks.map((x, i) => taskRow(k, x, i, 'today')).join('') : `<div class="empty-row">No tasks yet. Aim for ${st.hardTasksTarget} tasks around ${st.targetDifficulty}/10, the rest easier.</div>`}</div>
+      <div class="cy-acts no-print"><button class="btn cy-dash" data-act="addTask" data-k="${k}">${px('plus', 16)}Add task</button>${k === t && ts.some(x => !x.done) ? `<button class="btn primary" data-act="startFocus">${px('play', 16)}Start focus</button>` : ''}</div>`;
+    if (st.showRulesOnToday) h += sec('rules', 'Manual check-in', cyRules(k), cyCompPill(k));
+    if (st.showFactorsOnToday || st.showJournalOnToday) h += `<div class="cy-pair">${st.showFactorsOnToday ? sec('factors', 'Factors', factorsForm(k)) : ''}${st.showJournalOnToday ? sec('journal', 'Feedback journal', journalForm(k)) : ''}</div>`;
+    return h + sheetForPrint(k);
+  },
+  plan() {
+    const st = S.settings, t = todayKey(), k = addDays(t, 1);
+    const ts = activeTasks(k), d = S.days[k] || { tasks: [] };
+    const undone = activeTasks(t).filter(x => !x.done && x.what);
+    const rec = recurringTasks(k).filter(r => !ts.some(x => normName(x.what) === normName(r.t.what)));
+    const top = rec.find(r => r.s && r.s.action === 'up') || rec.find(r => r.s && r.s.action === 'down');
+    let h = `<div class="dayhead"><div><div class="eyebrow">Build a tomorrow</div><h1 class="title">Tomorrow</h1></div><span class="small muted cy-mono">${esc(niceDate(k, { weekday: 'short', day: 'numeric', month: 'short' }))}</span></div>
+      <p class="muted small">Plan it before today ends: exact tasks, amounts, times. Wake up with clarity, not decisions.</p>
+      <div class="card cy-plan"><div class="row between"><span class="h2">Balanced plan</span><span class="small muted cy-mono"><b>${ts.length}/${st.maxTasks}</b> tasks</span></div>${cyMix(ts, st.maxTasks)}`;
+    if (top) {
+      const i = rec.indexOf(top);
+      h += `<div class="sugbar">${px('zap', 14)}<div class="t"><b>${top.s.action === 'up' ? `Make it ~${st.overloadStep}% harder` : 'Ease off a little'}</b><span class="small">${esc(top.t.what)}: ${esc(top.s.text)}</span></div><button class="btn sm primary" data-act="addSug" data-i="${i}">Add</button></div>`;
+    }
+    h += `</div><div class="cy-two no-print">
+      <button class="btn" data-act="carry" ${undone.length ? '' : 'disabled'}>Carry over unfinished (${undone.length})</button>
+      <button class="btn" data-act="repeatToday" ${activeTasks(t).length ? '' : 'disabled'}>Repeat today, adjusted</button></div>`;
+    dayHints(k).forEach(([c, m]) => { h += `<div class="hint ${c}">${esc(m)}</div>`; });
+    const woops = S.woops.filter(w => w.active && (w.obstacle || w.plan));
+    if (rec.length || woops.length) {
+      h += '<div class="cy-pair">';
+      if (rec.length) h += sec('sugs', '7/10 suggestions', `<p class="small muted" style="margin-top:0">From your recent tasks. Below ${st.targetDifficulty - st.tolerance}/10 actual difficulty, add load. Above ${st.targetDifficulty + st.tolerance}, ease off.</p>` +
+        rec.map(({ t: x, s }, i) => `<div class="rule-row"><div class="t"><b>${esc(x.what)}</b><div class="small muted">${s ? esc(s.text) : 'Rate actual difficulty to get overload suggestions.'}</div></div>
+         <button class="btn sm" data-act="addSug" data-i="${i}">Add</button></div>`).join(''));
+      if (woops.length) h += sec('ifthen', 'Your if-then plans', woops.map(w => `<div class="rule-row"><div class="t"><b>${esc(w.wish)}</b><div class="small">If <i>${esc(w.obstacle)}</i>, then <i>${esc(w.plan)}</i>.</div></div></div>`).join(''));
+      h += '</div>';
+    }
+    h += `<div class="cy-lh"><span class="eyebrow">Tasks</span><span class="row"><span class="cy-goal">Next day attack goal <b>${st.targetDifficulty}/10</b></span><button class="btn sm no-print" data-act="addTask" data-k="${k}">${px('plus', 14)}Add task</button></span></div>
+      <div class="tasks">${d.tasks.length ? d.tasks.map((x, i) => taskRow(k, x, i, 'plan')).join('') : '<div class="empty-row">Nothing planned for tomorrow yet.</div>'}</div>`;
+    return h;
+  },
+  focus() {
+    const tm = S.settings.timer, k = todayKey();
+    if (T.left == null) tSet('work', tm.work);
+    const task = T.taskId ? findTask(T.taskKey, T.taskId) : null;
+    const ts = activeTasks(k).filter(t => !t.done), next = ts.find(t => t.id !== T.taskId);
+    const today = S.sessions.filter(s => s.d === k);
+    const label = { work: 'Deep work', break: 'Break', starter: 'Starter' }[T.mode];
+    const on = Math.floor((1 - T.left / T.total) * 30);
+    let h = `<div class="dayhead"><div><div class="eyebrow">30/10 system</div><h1 class="title">Focus</h1></div>
+      ${next ? `<button class="cy-next" data-act="focusTask" data-k="${k}" data-id="${next.id}"><span><span class="eyebrow">Next up</span><b>${esc(next.what || 'Untitled')}</b><span class="small muted">${esc([next.when, next.qty != null ? next.qty + ' ' + (next.unit || '') : ''].filter(Boolean).join(' · '))}</span></span>${kindOf(next) ? `<span class="tag ${kindOf(next)}">${kindOf(next)}</span>` : ''}${px('chev', 14)}</button>` : ''}</div>`;
+    h += `<div class="cy-br"><div class="card focus-card cy-core">
+      <div class="cy-tm"><div class="cy-ring" id="tblocks">${Array.from({ length: 30 }, (_, i) => `<i class="${i < on ? 'on' : ''}" style="--i:${i}"></i>`).join('')}</div>
+        <div class="cy-clock"><div class="time" id="tdisp">${mmss(T.left)}</div><div class="mode ${T.mode === 'break' ? 'break' : ''}">${T.running ? (T.mode === 'break' ? 'On break' : 'In the zone') : 'Paused'}</div></div></div>
+      <div class="cy-tinfo"><div class="eyebrow">${label}${T.mode !== 'starter' ? ' · block ' + T.cycle : ''}</div>
+        <div class="task-name">${esc(task ? task.what : T.mode === 'break' ? 'Rest your eyes' : 'Pick a task below')}</div>
+        <p class="msg muted">${esc(T.mode === 'break' ? tm.breakMsg : tm.workMsg)}</p></div>
+      <div class="cy-ctrls"><button class="btn" data-act="tPlus5" aria-label="Add 5 minutes"><b>+5</b>min</button>
+        <button class="btn primary" data-act="tToggle">${px(T.running ? 'pause' : 'play', 16)}${T.running ? 'Pause' : 'Start'}</button>
+        <button class="btn icon" data-act="tSkip" aria-label="Skip to ${T.mode === 'break' ? 'work' : 'break'}">${px('skip', 18)}</button>
+        ${T.left < T.total ? `<button class="btn" data-act="tReset">${px('reset', 14)}Reset</button>` : ''}</div>
+    </div></div>`;
+    h += `<div class="card cy-mind"><button class="cy-row" data-act="reframe">${px('refresh', 14)}<span class="t"><b>Mind wandering?</b><span class="small muted">Reframe the task and get back on track.</span></span>${px(T.reframe != null ? 'cd' : 'chev', 14)}</button>`;
+    if (T.reframe != null) {
+      const q = S.settings.reframePrompts[T.reframe] || '', why = S.settings.myWhy;
+      const woops = S.woops.filter(w => w.active && w.wish), subj = task ? task.what : 'what I am studying';
+      h += `<div class="reframe"><div class="eyebrow">Cognitive reframing</div><p class="q">${esc(q)}</p>
+        <p class="small">${why ? `<b>My why:</b> <span class="muted">${esc(why)}</span>` : '<span class="muted">Add your personal "why" in Settings and it shows up here.</span>'}${woops.length ? ` <b class="cy-gap">Wishes:</b> <span class="muted">${woops.map(w => esc(w.wish)).join(' · ')}</span>` : ''}</p>
+        <p class="kbd"><span class="muted">Ask a chatbot:</span> <span id="aiprompt">What are the real-life implications of ${esc(subj)}, and how can I apply it?</span></p>
+        <div class="row"><button class="btn sm" data-act="copyAi">${px('copy', 14)}Copy question</button><button class="btn sm" data-act="reframe">${px('refresh', 14)}Another prompt</button></div></div>`;
+    }
+    h += `</div><div class="card cy-work">`;
+    if (T.ask) h += `<div class="cy-ask"><b>Starter done. Am I willing to continue?</b><div class="row"><button class="btn sm" data-act="tContinue">Yes, full ${tm.work}-min block</button><button class="btn sm" data-act="tStop">Not now, that's okay</button></div></div>`;
+    h += `<div class="row cy-on"><span class="h2">Work on</span><select data-act-change="pickFocusTask" aria-label="Task to focus on"><option value="">No specific task</option>${ts.map(t => `<option value="${t.id}" ${T.taskId === t.id ? 'selected' : ''}>${esc(t.what || 'Untitled')}</option>`).join('')}</select></div>
+      <div class="row"><button class="chip" data-act="tStarter" data-m="${tm.starterG0}">Grade 0 · ${tm.starterG0} min</button><button class="chip" data-act="tStarter" data-m="${tm.starterG1}">Grade 1 · ${tm.starterG1} min</button></div>
+      <p class="small muted">Can't start? Do the tiny version. No pressure to do more.</p></div>`;
+    const workMin = today.filter(s => s.type !== 'break').reduce((a, s) => a + s.m, 0);
+    h += `<div class="card cy-today"><div class="row between"><span class="h2">Today</span><b class="cy-mono on">${workMin} min</b></div>
+      <p class="small muted cy-mono">${today.length} block${today.length === 1 ? '' : 's'}${today.length ? ': ' + today.slice(-8).map(s => `${s.m}m${s.task ? ' ' + esc(s.task) : ''}`).join(' · ') : ''}</p>
+      <div class="cy-four">
+        <label class="f"><span>Work</span>${inp('set|timer.work', tm.work, 'type="number" min="1"')}</label>
+        <label class="f"><span>Break</span>${inp('set|timer.brk', tm.brk, 'type="number" min="1"')}</label>
+        <label class="f"><span>Long every</span>${inp('set|timer.longEvery', tm.longEvery, 'type="number" min="0" title="0 = never"')}</label>
+        <label class="f"><span>Long break</span>${inp('set|timer.longBrk', tm.longBrk, 'type="number" min="1"')}</label>
+      </div></div>`;
+    return h;
+  },
+};
+
 const CMD_HELP = 'today | tomorrow | focus | woop | manual | insights | history | settings | 1-8 | add <task> | done <n> | start | pause | reset | style <name> | help';
 function runCmd(raw) {
   const [c0, ...rest] = raw.trim().split(/\s+/), c = (c0 || '').toLowerCase(), arg = rest.join(' ');
@@ -1178,6 +1356,8 @@ function render() {
   const v = V[S.ui.view] ? S.ui.view : 'attack';
   const y = window.scrollY;
   $('#main').innerHTML = `<div class="wrap">${(LV[layout()]?.[v] || V[v])()}</div>`;
+  $('#main').dataset.view = v;
+  document.querySelectorAll('#main .title').forEach(h => { h.dataset.t = h.textContent; });
   window.scrollTo(0, y);
   document.querySelectorAll('.gridwrap').forEach(g => { g.scrollLeft = g.scrollWidth; });
   renderNav();
@@ -1252,6 +1432,8 @@ const ACT = {
   deckDone(el) { const t = findTask(el.dataset.k, el.dataset.id); if (!t) return; t.done = true; save(); render(); toast('Done: ' + (t.what || 'task')); },
   deckSkip() { deckSkip++; render(); },
   menu() { document.documentElement.classList.toggle('menu-open'); },
+  setGrade(el) { const t = findTask(el.dataset.k, el.dataset.id); if (!t) return; t.grade = el.dataset.v; save(); render(); },
+  pickOpen(el) { const i = el.querySelector('input'); try { i.showPicker(); } catch (e) { i.focus(); } },
   setval(el) {
     const [, k, id, f] = el.dataset.path.split('|'); const t = findTask(k, id); if (!t) return;
     const v = +el.dataset.v; t[f] = t[f] === v ? null : v; save(); render();
