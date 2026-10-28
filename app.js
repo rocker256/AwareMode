@@ -38,7 +38,7 @@ const TABS = [
 
 function defaultSettings() {
   return {
-    appName: 'Aware Mode', myWhy: '', style: 'pixel', theme: 'auto', accent: '#e4572e', fontScale: 100, weekStart: 1,
+    appName: 'Aware Mode', myWhy: '', style: 'paperbox', theme: 'auto', accent: '#e4572e', fontScale: 100, weekStart: 1,
     targetDifficulty: 7, hardTasksTarget: 2, maxTasks: 6, easyMax: 4, tolerance: 1, overloadStep: 20, lookback: 3,
     winThreshold: 60, planReminderHour: 18, showPrinciple: true, showFactorsOnToday: true, showJournalOnToday: true, showRulesOnToday: true,
     labels: { what: 'What exactly', howMuch: 'How much', when: 'When', where: 'Where' },
@@ -91,7 +91,7 @@ function defaultSettings() {
 }
 
 function fresh() {
-  return { v: 1, settings: defaultSettings(), days: {}, rules: [], woops: [], sessions: [], ui: { view: 'attack', open: {}, range: 14 }, created: todayKey() };
+  return { v: 1, settings: defaultSettings(), days: {}, rules: [], woops: [], sessions: [], ui: { view: 'attack', open: {}, range: 14, pb: 1 }, created: todayKey() };
 }
 
 function migrate(s) {
@@ -107,6 +107,7 @@ function migrate(s) {
   });
   s.days = s.days || {}; s.rules = s.rules || []; s.woops = s.woops || []; s.sessions = s.sessions || [];
   s.ui = Object.assign({ view: 'attack', open: {}, range: 14 }, s.ui || {});
+  if (!s.ui.pb) { s.settings.style = 'paperbox'; s.ui.pb = 1; } // Paper Box became the default style
   for (const k in s.days) { const dd = s.days[k]; dd.tasks = dd.tasks || []; dd.factors = dd.factors || {}; dd.journal = dd.journal || {}; dd.rules = dd.rules || {}; }
   return s;
 }
@@ -246,6 +247,7 @@ const STYLES = [
   { id: 'deck', name: 'Deck', layout: 'deck', fixedAccent: true, note: 'One big card at a time. Swipe through your day.', sw: ['#ffe600', '#111111', '#ffffff', '#ff3d00'] },
   { id: 'gamified', name: 'Gamified', note: 'Dark, round and bold. Three colours, mission cards.', sw: ['#0b0b0f', '#1b1b1f', '#ff4a1c', '#f4f3ef'] },
   { id: 'cyberpunk', name: 'Cyberpunk', layout: 'cyber', fixedAccent: true, note: 'Neon HUD. Cut panels, terminal data, one cyan action.', sw: ['#05040A', '#15131F', '#00F0FF', '#FF2BD6'] },
+  { id: 'paperbox', name: 'Paper Box', layout: 'paper', fixedAccent: true, note: 'Cream paper, ink outlines, hard shadows, one coral accent.', sw: ['#F5ECDE', '#FFFFFF', '#F8704F', '#141414'] },
 ];
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
 function applyTheme() {
@@ -261,7 +263,7 @@ function applyTheme() {
   if (def.id === 'bw' || def.fixedAccent) root.style.removeProperty('--accent'); else root.style.setProperty('--accent', st.accent);
   if (root.dataset.style === 'pixel') root.style.setProperty('--hard', st.accent); else root.style.removeProperty('--hard');
   root.style.setProperty('--fs', (st.fontScale || 100) + '%');
-  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = def.id === 'cyberpunk' ? '#0C0B14' : dark ? '#0f0e0d' : '#f4f1ea';
+  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = def.id === 'cyberpunk' ? '#0C0B14' : def.id === 'paperbox' ? (dark ? '#1C1A17' : '#F5ECDE') : dark ? '#0f0e0d' : '#f4f1ea';
   document.title = st.appName || 'Aware Mode';
 }
 mq.addEventListener?.('change', applyTheme);
@@ -291,10 +293,12 @@ const CY_COUNT = {
   's-reframe': () => S.settings.reframePrompts.length, 's-loading': () => S.settings.loadingLines.length, 's-principles': () => S.settings.principles.length,
   's-tabs': () => S.settings.tabs.length, 's-factors': () => S.settings.factors.length,
 };
+// Paper Box also folds these (they sit as titled rows with a count on the board)
+const PB_CLOSED = ['impact', 'history', 'pbtoday'];
 function sec(id, title, body, extra = '') {
-  const cy = S.settings.style === 'cyberpunk';
-  const open = cy && S.ui.open[id] === undefined && CY_CLOSED.includes(id) ? false : S.ui.open[id] !== false;
-  if (cy && CY_COUNT[id] && !extra) extra = `<span class="cnt">${pad(CY_COUNT[id]())}</span>`;
+  const cy = S.settings.style === 'cyberpunk' || S.settings.style === 'paperbox';
+  const open = cy && S.ui.open[id] === undefined && (CY_CLOSED.includes(id) || (S.settings.style === 'paperbox' && PB_CLOSED.includes(id))) ? false : S.ui.open[id] !== false;
+  if (cy && CY_COUNT[id] && !extra) extra = `<span class="cnt">${S.settings.style === 'paperbox' ? CY_COUNT[id]() : pad(CY_COUNT[id]())}</span>`;
   return `<details class="sec" data-sec="${id}" ${open ? 'open' : ''}><summary>${title}${extra}</summary><div class="body">${body}</div></details>`;
 }
 function scale(path, val, tgt) {
@@ -359,7 +363,28 @@ const CY = {
   refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/>',
   carry: '<path d="M15 10l5 5-5 5M4 4v7a4 4 0 0 0 4 4h12"/>', repeat: '<path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/>',
 };
+// Paper Box line icons (Lucide-style, 2px stroke, rounded)
+const PB = Object.assign({}, CY, {
+  today: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  plan: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  focus: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/>',
+  manual: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
+  insights: '<path d="M3 3v18h18M7 16v-4M12 16V8M17 16v-7"/>',
+  settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  more: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  up: '<path d="M12 19V5M5 12l7-7 7 7"/>', down: '<path d="M12 5v14M19 12l-7 7-7-7"/>', cu: '<path d="M18 15l-6-6-6 6"/>',
+  trash: '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', bulb: '<path d="M9 18h6M10 22h4M15 14c.2-1 .7-1.7 1.5-2.5A5.5 5.5 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>',
+  phone: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>', clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  alert: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>', arrow: '<path d="M5 12h14M12 5l7 7-7 7"/>',
+  dl: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>', ul: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+  paste: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  play: '<path d="M6 4l14 8-14 8z"/>', pause: '<path d="M7 4h3v16H7zM14 4h3v16h-3z"/>',
+  spark: '<path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z" fill="currentColor" stroke="none"/>',
+});
 function px(name, size = 18) {
+  if (S.settings.style === 'paperbox' && PB[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${PB[name]}</svg>`;
   if (S.settings.style === 'cyberpunk' && CY[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${CY[name]}</svg>`;
   if (['refresh', 'simplified', 'gamified', 'studio', 'timeline', 'deck'].includes(S.settings.style) && LINE[name]) return `<svg class="pxi" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="shape-rendering:geometricPrecision">${LINE[name]}</svg>`;
   const rows = PX[name]; if (!rows) return '';
@@ -408,7 +433,8 @@ const navTabs = () => S.settings.tabs.filter(t => t.visible || t.id === 'setting
 function renderNav() {
   const v = S.ui.view;
   const term = layout() === 'term';
-  $('#nav').innerHTML = navTabs().map((t, i) =>
+  if (layout() === 'paper') pbNav(v);
+  else $('#nav').innerHTML = navTabs().map((t, i) =>
     `<a href="#${t.id}" class="${v === t.id ? 'on' : ''}" data-nav="${t.id}">${term ? `<span>${i + 1}:${esc(t.label.toLowerCase())}</span>` : `${px(t.id === 'attack' ? 'today' : t.id, 18)}<span>${esc(t.label)}</span>`}</a>`).join('');
   const name = S.settings.appName || 'Aware Mode';
   const parts = name.split(' ');
@@ -425,10 +451,28 @@ function renderNav() {
   if (S.ui.lvl !== x.level) { S.ui.lvl = x.level; save(); }
 }
 
+/* Paper Box: 5-cell bottom bar (first four tabs + More) and a Menu tile grid with every tab */
+const PB_EYEBROW = { attack: 'Attack today', plan: 'Build a tomorrow', focus: '30/10 system', woop: 'Clarity creates execution', manual: 'Treat yourself as a company', insights: 'Track · reflect · adjust', history: "Everything you've written", settings: 'Everything is yours to change' };
+const pbIcon = id => id === 'attack' ? 'today' : id;
+function pbNav(v) {
+  const tabs = navTabs(), bar = tabs.length <= 5 ? tabs : tabs.slice(0, 4);
+  const cur = tabs.find(t => t.id === v), over = tabs.length > 5 && cur && !bar.includes(cur);
+  let h = bar.map(t => `<a href="#${t.id}" class="${v === t.id ? 'on' : ''}" data-nav="${t.id}">${px(pbIcon(t.id), 22)}<span>${esc(t.label)}</span></a>`).join('');
+  if (tabs.length > 5) h += `<a href="#" class="more ${over ? 'on' : ''}" data-act="menu" aria-label="More tabs">${px(over ? pbIcon(cur.id) : 'more', 22)}<span>${over ? esc(cur.label) : 'More'}</span></a>`;
+  $('#nav').innerHTML = h;
+  let m = $('#pbmenu');
+  if (!m) { m = document.createElement('div'); m.id = 'pbmenu'; document.body.append(m); }
+  const s = streak(), name = (S.settings.appName || 'Aware Mode').split(' ');
+  m.innerHTML = `<div class="wrap"><div class="pb-mhero"><span class="pb-box"><img src="icons/mark.png" alt="" width="80" height="80"></span>${px('spark', 18)}${px('spark', 12)}
+      <div class="row"><span class="pb-wm">${name.length > 1 ? `${esc(name.slice(0, -1).join(' '))} <b>${esc(name.at(-1))}</b>` : `<b>${esc(name[0])}</b>`}</span>${s.n ? `<span class="pill">${px('flame', 16)}${s.n}</span>` : ''}</div></div>
+    <div class="row between pb-mh"><b>Menu</b><span class="eyebrow">${tabs.length} tabs</span></div>
+    <div class="pb-tiles">${tabs.map(t => `<a href="#${t.id}" class="pb-tile ${v === t.id ? 'on' : ''}" data-nav="${t.id}">${px(pbIcon(t.id), 26)}<span><b>${esc(t.label)}</b><span>${PB_EYEBROW[t.id]}</span></span></a>`).join('')}</div></div>`;
+}
+
 /* ---------- task rows ---------- */
 const openTask = new Set();
 function taskRow(k, t, i, mode) {
-  const kind = kindOf(t), today = mode === 'today', open = openTask.has(t.id);
+  const kind = kindOf(t), today = mode === 'today', open = openTask.has(t.id), pb = S.settings.style === 'paperbox';
   const p = `task|${k}|${t.id}|`;
   const amount = t.qty != null ? `${t.qty}${t.unit ? ' ' + t.unit : ''}` : '';
   const sub = t.movedTo ? 'Moved to ' + niceDate(t.movedTo, { weekday: 'short', day: 'numeric', month: 'short' })
@@ -438,11 +482,12 @@ function taskRow(k, t, i, mode) {
     <div class="trow" data-act="toggleTask" data-id="${t.id}" role="button" tabindex="0" aria-expanded="${open}">
       ${today && !t.movedTo ? `<label class="check" title="Done"><input type="checkbox" data-bind="${p}done" data-rr ${t.done ? 'checked' : ''} aria-label="Mark done"><span></span></label>` : `<span class="num">${pad(i + 1)}</span>`}
       <div class="t"><div class="name">${t.what ? esc(t.what) : '<span class="muted">Untitled task</span>'}</div><div class="sub">${esc(sub)}</div></div>
+      ${pb ? '<span class="rt"><span class="row">' : ''}
       ${t.grade === 'g0' ? '<span class="tag grade" title="Grade 0 starter">G0</span>' : t.grade === 'g1' ? '<span class="tag grade" title="Grade 1 starter">G1</span>' : ''}
-      ${kind ? `<span class="tag ${kind}">${kind}</span>` : ''}
-      ${dd ? `<span class="dd" title="Predicted${today && t.ad ? ' > actual' : ''} difficulty">${dd}</span>` : ''}
+      ${kind ? `<span class="tag ${kind}">${pb ? `<i>${kind[0].toUpperCase()}</i>` : ''}${kind}</span>` : ''}${pb ? '</span>' : ''}
+      ${dd ? `<span class="dd" title="Predicted${today && t.ad ? ' > actual' : ''} difficulty">${dd}</span>` : ''}${pb ? '</span>' : ''}
       ${S.settings.style === 'gamified' && !t.movedTo ? `<span class="xp" title="XP for finishing">+${taskXp(t)}</span>` : ''}
-      <span class="chev">${px('chev', 7)}</span>
+      <span class="chev">${px('chev', pb ? 16 : 7)}</span>
     </div>
     ${open ? taskEditor(k, t, mode) : ''}
   </div>`;
@@ -461,21 +506,30 @@ function taskEditor(k, t, mode) {
     const s = suggestFor(t.what, k);
     if (s) meta += `<span>${esc(s.text)}</span>${s.qty != null && s.qty !== t.qty ? ` <button class="btn sm" data-act="applySug" data-k="${k}" data-id="${t.id}" data-q="${s.qty}">Apply</button>` : ''}`;
   }
-  return `<div class="editor" data-id="${t.id}">
-    <label class="f"><span>${esc(L.what)}</span>${inp(p + 'what', t.what, `class="what" placeholder="${esc(P.what)}"`)}</label>
+  const pb = st.style === 'paperbox', kind = kindOf(t);
+  return `${pb ? `<div class="pb-scrim" data-act="toggleTask" data-id="${t.id}"></div>` : ''}<div class="editor" data-id="${t.id}">
+    ${pb ? `<div class="pb-sh"><i class="handle"></i><div class="row"><b>${t.what ? esc(t.what) : 'New task'}</b>${kind ? `<span class="tag ${kind}"><i>${kind[0].toUpperCase()}</i>${kind}</span>` : ''}<button class="icon-btn pb-x" data-act="toggleTask" data-id="${t.id}" aria-label="Close">${px('x', 16)}</button></div></div>` : ''}
+    ${pb ? `<div class="pb-fields">
+      <label class="f w"><span>${esc(L.what)}</span>${inp(p + 'what', t.what, `class="what" placeholder="${esc(P.what)}"`)}</label>
+      <label class="f"><span>${esc(L.howMuch)}</span>${inp(p + 'qty', t.qty, 'type="number" step="any" inputmode="decimal" placeholder="0"')}</label>
+      <label class="f"><span>Unit</span>${inp(p + 'unit', t.unit, `placeholder="${esc(P.unit)}"`)}</label>
+      <label class="f t"><span>Detail</span>${inp(p + 'detail', t.detail, `placeholder="${esc(P.detail)}"`)}</label>
+      <label class="f t"><span>${esc(L.when)}</span>${inp(p + 'when', t.when, 'type="time"')}</label>
+      <label class="f t"><span>${esc(L.where)}</span>${inp(p + 'where', t.where, `placeholder="${esc(P.where)}"`)}</label>
+    </div>` : `<label class="f"><span>${esc(L.what)}</span>${inp(p + 'what', t.what, `class="what" placeholder="${esc(P.what)}"`)}</label>
     <div class="fields">
       <label class="f"><span>${esc(L.howMuch)}</span><div class="qty">${inp(p + 'qty', t.qty, 'type="number" step="any" inputmode="decimal" placeholder="0" aria-label="Amount"')}${inp(p + 'unit', t.unit, `placeholder="${esc(P.unit)}" aria-label="Unit"`)}</div></label>
       <label class="f"><span>Detail</span>${inp(p + 'detail', t.detail, `placeholder="${esc(P.detail)}"`)}</label>
       <label class="f"><span>${esc(L.when)}</span>${inp(p + 'when', t.when, 'type="time"')}</label>
       <label class="f"><span>${esc(L.where)}</span>${inp(p + 'where', t.where, `placeholder="${esc(P.where)}"`)}</label>
-    </div>
+    </div>`}
     <div class="diff">
       <div class="dial"><span class="lbl">Predicted difficulty<b>${t.pd ? t.pd + '/10' : ''}</b></span>${scale(p + 'pd', t.pd, tg)}</div>
       ${today ? `<div class="dial"><span class="lbl">Actual difficulty<b>${t.ad ? t.ad + '/10' : ''}</b></span>${scale(p + 'ad', t.ad, tg)}</div>` : ''}
     </div>
     ${meta ? `<div class="meta">${meta}</div>` : ''}
     <div class="grid g2">
-      ${st.style === 'cyberpunk' ? `<div class="f cy-grade"><span>Starter grade</span><div class="seg">${[['full', 'Full task'], ['g1', `Grade 1: ${st.timer.starterG1}-min version`], ['g0', `Grade 0: ${st.timer.starterG0}-min version`]].map(([v, l]) => `<button type="button" class="${(t.grade || 'full') === v ? 'on' : ''}" data-act="setGrade" data-k="${k}" data-id="${t.id}" data-v="${v}">${l}</button>`).join('')}</div></div>` : `<label class="f"><span>Starter grade</span>
+      ${st.style === 'cyberpunk' || pb ? `<div class="f cy-grade"><span>Starter grade</span><div class="seg">${[['full', 'Full task'], ['g1', `Grade 1: ${st.timer.starterG1}-min version`], ['g0', `Grade 0: ${st.timer.starterG0}-min version`]].map(([v, l]) => `<button type="button" class="${(t.grade || 'full') === v ? 'on' : ''}" data-act="setGrade" data-k="${k}" data-id="${t.id}" data-v="${v}">${l}</button>`).join('')}</div></div>` : `<label class="f"><span>Starter grade</span>
         <select data-bind="${p}grade" data-rr>
           <option value="full" ${t.grade === 'full' ? 'selected' : ''}>Full task</option>
           <option value="g1" ${t.grade === 'g1' ? 'selected' : ''}>Grade 1: ${st.timer.starterG1}-min version</option>
@@ -483,7 +537,14 @@ function taskEditor(k, t, mode) {
         </select></label>`}
       <label class="f"><span>Notes</span><textarea data-bind="${p}notes" rows="1" style="min-height:38px" placeholder="Obstacles, time spent, why">${esc(t.notes)}</textarea></label>
     </div>
-    <div class="row">
+    ${pb ? `<div class="pb-acts">
+      <button class="btn" data-act="focusTask" data-k="${k}" data-id="${t.id}">${px('focus', 16)}Focus</button>
+      ${today && !t.done && !t.movedTo ? `<button class="btn" data-act="moveTask" data-k="${k}" data-id="${t.id}">${px('arrow', 16)}To tomorrow</button>` : ''}
+      <button class="btn" data-act="dupTask" data-k="${k}" data-id="${t.id}">${px('copy', 16)}Duplicate</button>
+      <button class="btn" data-act="mvTask" data-dir="-1" data-k="${k}" data-id="${t.id}">${px('up', 16)}Move up</button>
+      <button class="btn" data-act="mvTask" data-dir="1" data-k="${k}" data-id="${t.id}">${px('down', 16)}Move down</button>
+      <button class="btn danger" data-act="delTask" data-k="${k}" data-id="${t.id}">${px('trash', 16)}Delete</button>
+    </div>` : `<div class="row">
       <button class="btn sm" data-act="focusTask" data-k="${k}" data-id="${t.id}">${px('play', 9)} Focus</button>
       ${today && !t.done && !t.movedTo ? `<button class="btn sm" data-act="moveTask" data-k="${k}" data-id="${t.id}">To tomorrow</button>` : ''}
       <button class="btn sm" data-act="dupTask" data-k="${k}" data-id="${t.id}">Duplicate</button>
@@ -491,7 +552,7 @@ function taskEditor(k, t, mode) {
       <button class="icon-btn" data-act="mvTask" data-dir="1" data-k="${k}" data-id="${t.id}" title="Move down" aria-label="Move down">v</button>
       <span style="flex:1"></span>
       <button class="btn sm danger" data-act="delTask" data-k="${k}" data-id="${t.id}">Delete</button>
-    </div>
+    </div>`}
   </div>`;
 }
 function taskList(k, mode, emptyMsg) {
@@ -989,7 +1050,7 @@ V.settings = () => {
     <p class="small muted">Only the look changes. All your data and features stay the same. Light/dark still follows the Theme setting below.${st.style === 'bw' ? ' Pixel B&W ignores the accent colour.' : ''}</p>`);
   h += sec('s-general', 'General', `<div class="grid g2">
       ${field('App name', 'set|appName', st.appName)}
-      <label class="f"><span>Theme</span><select data-bind="set|theme" data-rr>${['auto', 'light', 'dark'].map(v => `<option ${st.theme === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <label class="f"${st.style === 'paperbox' ? ' for="pb-none"' : ''}><span>Theme</span>${st.style === 'paperbox' ? `<div class="seg">${['auto', 'light', 'dark'].map(v => `<button type="button" class="${st.theme === v ? 'on' : ''}" data-act="pbTheme" data-v="${v}">${v}</button>`).join('')}</div>` : `<select data-bind="set|theme" data-rr>${['auto', 'light', 'dark'].map(v => `<option ${st.theme === v ? 'selected' : ''}>${v}</option>`).join('')}</select>`}</label>
       <label class="f"><span>Accent colour</span><div class="row"><input type="color" data-bind="set|accent" value="${esc(st.accent)}"> <button class="btn sm ghost" data-act="resetAccent">Reset</button></div></label>
       ${field('Text size %', 'set|fontScale', st.fontScale, 'type="number" min="80" max="140" step="5"')}
       <label class="f"><span>Week starts on</span><select data-bind="set|weekStart" data-num data-rr>${DOW.map((d, i) => `<option value="${i}" ${+st.weekStart === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
@@ -1303,6 +1364,161 @@ LV.cyber = {
   },
 };
 
+/* ---------- Paper Box (paper layout): screens from the Paper Box board ---------- */
+const pbBlocks = (n, cls) => `<span class="pb-m10">${Array.from({ length: 10 }, (_, i) => `<i class="${i < n ? cls : ''}"></i>`).join('')}</span>`;
+function pbMix(ts, max) {
+  const c = mix(ts), rest = Math.max(0, (max || 0) - c.hard - c.medium - c.easy), un = ts.length - c.hard - c.medium - c.easy;
+  const cells = [['h', c.hard], ['m', c.medium], ['e', c.easy], ['x', un + rest]].filter(x => x[1]);
+  return `<span class="pb-mix">${cells.length ? cells.map(([k, n]) => `<i class="${k}" style="flex:${n}"></i>`).join('') : '<i class="x" style="flex:1"></i>'}</span>`;
+}
+function pbHints(list) {
+  if (!list.length) return '';
+  const ic = { accent: 'clock', warn: 'alert', bad: 'alert', good: 'check', '': 'alert' };
+  return `<div class="pb-hints">${list.map(([c, m]) => `<div>${px(ic[c] || 'alert', 16)}<span>${m}</span></div>`).join('')}</div>`;
+}
+function pbRules(k) {
+  const rules = S.rules.filter(r => r.active);
+  if (!rules.length) return `<div class="empty">No rules yet. Write your company policies in the <a href="#manual">Manual</a>.</div>`;
+  const d = S.days[k] || { rules: {} };
+  return rules.map(r => {
+    const v = d.rules[r.id];
+    return `<div class="rule-row"><div class="t"><span>${esc(r.title || 'Untitled rule')}</span>${r.detail ? `<div class="small muted">${esc(r.detail)}</div>` : ''}</div>
+      <div class="seg pb-ck"><button class="yes ${v === true ? 'on' : ''}" data-act="ruleSet" data-k="${k}" data-id="${r.id}" data-v="1">✓ Followed</button><button class="no ${v === false ? 'on' : ''}" data-act="ruleSet" data-k="${k}" data-id="${r.id}" data-v="0">✗ Broken</button></div></div>`;
+  }).join('');
+}
+const pbAdd = (k, label = 'Add task') => `<button class="pb-dash no-print" data-act="addTask" data-k="${k}">${px('plus', 16)}${label}</button>`;
+function pbTasks(k, mode, empty) {
+  const st = S.settings, d = S.days[k] || { tasks: [] };
+  return `<div class="card pb-tasks"><div class="row between pb-th"><b>Tasks</b><span class="eyebrow">Next day attack goal ${st.targetDifficulty}/10</span></div>
+    <div class="tasks">${d.tasks.length ? d.tasks.map((x, i) => taskRow(k, x, i, mode)).join('') : `<div class="empty-row">${empty}</div>`}</div></div>`;
+}
+LV.paper = {
+  woop() {
+    let h = `<div class="dayhead"><div><div class="eyebrow">Clarity creates execution</div><h1 class="title">WOOP</h1></div></div>
+      <p class="muted small">Wish, Outcome, Obstacle, Plan. Picture the obstacle and decide now what you'll do when it shows up.</p>
+      <button class="btn primary" data-act="addWoop">${px('plus', 15)} New WOOP</button>`;
+    if (!S.woops.length) h += `<div class="empty pb-dash">${px('woop', 16)} No WOOPs yet.<br><span class="small">Example: read 10 chapters · pass the exam · I start gaming · if I feel the urge, the controller goes in another room and I read 1 page.</span></div>`;
+    const steps = [['wish', 'Wish', 'What do I really want?', 'Read 10 chapters this month'], ['outcome', 'Outcome', 'What would it look like?', 'I pass the exam with room to spare'], ['obstacle', 'Obstacle', 'What inside me gets in the way?', 'I start gaming instead of studying'], ['plan', 'Plan', 'If the obstacle shows up, then I will…', 'put the controller in another room and read 1 page']];
+    S.woops.slice().reverse().sort((a, b) => b.active - a.active).forEach(w => {
+      const p = `woop|${w.id}|`, open = w.active ? S.ui.open['woop:' + w.id] !== false : !!S.ui.open['woop:' + w.id];
+      h += `<div class="card pb-woop ${open ? '' : 'shut'}"><div class="row between pb-wh"><label class="row"><input type="checkbox" class="pb-sq" data-bind="${p}active" data-rr ${w.active ? 'checked' : ''}> <b>Active</b></label>
+        ${open ? `<button class="btn pill" data-act="delWoop" data-id="${w.id}">${px('trash', 14)}Delete</button>` : ''}</div>
+        <div class="woop-steps">${(open ? steps : steps.slice(0, 1)).map(([f, t, q, ph], i) => `<div class="wstep ${w[f] ? 'filled' : ''}"><span class="n">${i + 1}</span><div style="min-width:0;flex:1"><h3>${t}</h3>${open ? `<div class="q">${q}</div>` : ''}
+          ${f === 'plan' ? `<textarea data-bind="${p}plan" placeholder="${esc(ph)}" aria-label="${t}">${esc(w.plan)}</textarea>` : inp(p + f, w[f], `placeholder="${esc(ph)}" aria-label="${t}"`)}</div>${open ? '' : `<button class="icon-btn" data-act="pbWoop" data-id="${w.id}" aria-label="Show all steps"><i class="pb-chev"></i></button>`}</div>`).join('')}</div>
+        ${open ? `<div class="row pb-wf"><button class="btn pill" data-act="visualize" data-id="${w.id}">${px('eye', 14)}Visualize</button><button class="btn pill" data-act="woopTask" data-id="${w.id}">${px('plan', 14)}Make tomorrow's task</button>${w.active ? '' : `<span style="flex:1"></span><button class="icon-btn" data-act="pbWoop" data-id="${w.id}" aria-label="Fold"><i class="pb-chev up"></i></button>`}</div>` : ''}</div>`;
+    });
+    return h;
+  },
+  attack() {
+    const st = S.settings, t = todayKey(), k = S.ui.date || t;
+    const ts = activeTasks(k), status = dayStatus(k);
+    const done = ts.filter(x => x.done).length, pctDone = ts.length ? Math.round(done / ts.length * 100) : 0;
+    const ad = dayAvg(k, 'ad'), pd = dayAvg(k, 'pd');
+    const mins = S.sessions.filter(s => s.d === k && s.type !== 'break').reduce((a, s) => a + s.m, 0);
+    const reg = regression(), tomorrowEmpty = !activeTasks(addDays(t, 1)).length;
+    let h = '';
+    if (st.showPrinciple && st.principles.length) { const pr = esc(st.principles[(parseKey(k).getTime() / 864e5 | 0) % st.principles.length]); h += `<div class="pb-tick" aria-label="Principle of the day: ${pr}"><div><span>Principle ✦ ${pr} ✦&nbsp;</span><span aria-hidden="true">Principle ✦ ${pr} ✦&nbsp;</span></div></div>`; }
+    h += `<div class="dayhead"><div><div class="eyebrow">${k === t ? 'Attack today' : k > t ? 'Planned day' : 'Past day'}</div>
+      <h1 class="title">${k === t ? 'Today' : esc(niceDate(k, { weekday: 'short' }))}</h1></div>
+      <div class="pb-date no-print"><button data-act="shiftDate" data-n="-1" aria-label="Previous day">${px('cl', 16)}</button>
+        <label data-act="pickOpen">${px('cal', 14)}<span>${esc(parseKey(k).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }))}</span><input type="date" value="${k}" data-act-change="pickDate" aria-label="Pick date"></label>
+        <button data-act="shiftDate" data-n="1" aria-label="Next day">${px('chev', 16)}</button></div>
+      <div class="row no-print pb-hbtn">${k !== t ? '<button class="btn pill" data-act="goToday">Today</button>' : ''}<button class="btn pill" data-act="goHistory">History</button></div></div>`;
+    const al = [];
+    if (k === t && new Date().getHours() >= st.planReminderHour && tomorrowEmpty) al.push(['accent', 'Plan tomorrow before today ends. <a class="pb-lk" href="#plan">Build tomorrow' + px('arrow', 14) + '</a>']);
+    if (reg && (reg.level === 'bad' || reg.level === 'warn') && k === t) al.push([reg.level, `${esc(reg.msg)} <a class="pb-lk" href="#manual">Open manual</a>`]);
+    if (status !== 'normal') al.push(['good', status === 'rest' ? "Rest day. Recovery is part of the system and it won't break your streak." : 'Grace day. Life happened. The streak is protected; do what you can.']);
+    dayHints(k).forEach(([c, m]) => al.push([c, esc(m)]));
+    h += pbHints(al);
+    h += `<div class="card pb-hero"><div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${done} of ${ts.length} done</div></div>
+      <div class="pb-meters">
+        <div><span class="lbl">Planned</span>${pbBlocks(Math.round(pd || 0), 'f')}<b>${pd != null ? Math.round(pd) : '–'}/10</b></div>
+        <div><span class="lbl">Actual</span>${pbBlocks(Math.round(ad || 0), 'c')}<b>${ad != null ? Math.round(ad) : '–'}/10</b></div>
+        <div><span class="lbl">Mix</span>${pbMix(ts)}<span class="lbl t">target ${st.hardTasksTarget} hard</span></div>
+      </div></div>
+    <div class="pb-day" role="group" aria-label="Day type">${['normal', 'grace', 'rest'].map(s => `<button class="pb-tier ${status === s ? 'on' : ''}" data-act="setStatus" data-k="${k}" data-v="${s}">${s === 'normal' ? 'Attack' : s === 'grace' ? 'Grace' : 'Rest'}${status === s ? px('spark', 11) : ''}</button>`).join('')}
+      <span class="pb-min"><b>${mins} min</b><span>focused</span></span></div>`;
+    h += pbTasks(k, 'today', `No tasks yet. Aim for ${st.hardTasksTarget} tasks around ${st.targetDifficulty}/10, the rest easier.`);
+    h += `<div class="pb-two no-print">${pbAdd(k)}${k === t && ts.some(x => !x.done) ? `<button class="btn primary" data-act="startFocus">${px('play', 16)}Start focus</button>` : ''}</div>`;
+    if (st.showRulesOnToday) h += sec('rules', 'Manual check-in', pbRules(k), compBadge(k));
+    if (st.showFactorsOnToday || st.showJournalOnToday) h += `<div class="cy-pair">${st.showFactorsOnToday ? sec('factors', 'Factors', factorsForm(k)) : ''}${st.showJournalOnToday ? sec('journal', 'Feedback journal', journalForm(k)) : ''}</div>`;
+    if (!NATIVE) h += `<div class="row no-print" style="justify-content:flex-end"><button class="btn pill" data-act="print">${px('print', 14)}Print sheet</button></div>`;
+    return h + sheetForPrint(k);
+  },
+  plan() {
+    const st = S.settings, t = todayKey(), k = addDays(t, 1);
+    const ts = activeTasks(k);
+    const undone = activeTasks(t).filter(x => !x.done && x.what);
+    const rec = recurringTasks(k).filter(r => !ts.some(x => normName(x.what) === normName(r.t.what)));
+    const top = rec.find(r => r.s && r.s.action === 'up') || rec.find(r => r.s && r.s.action === 'down');
+    let h = `<div class="dayhead"><div><div class="eyebrow">Build a tomorrow</div><h1 class="title">Tomorrow</h1></div><span class="chip pb-dchip">${esc(niceDate(k, { weekday: 'short', day: 'numeric', month: 'short' }))}</span></div>
+      <p class="muted small">Plan it before today ends: exact tasks, amounts, times. Wake up with clarity, not decisions.</p>
+      <div class="pb-two pb-plan"><div class="card pb-bal"><div class="eyebrow">Balanced plan</div><div class="big">${ts.length}<small>/${st.maxTasks} tasks</small></div>${pbMix(ts, st.maxTasks)}</div>`;
+    if (top) {
+      const i = rec.indexOf(top);
+      h += `<div class="card pb-sug">${px('spark', 12)}<b>${top.s.action === 'up' ? `Make it ~${st.overloadStep}% harder` : 'Ease off a little'}</b><span class="small">${esc(top.t.what)}: ${esc(top.s.text)}</span><button class="btn pill" data-act="addSug" data-i="${i}">Add</button></div>`;
+    }
+    h += `</div><div class="pb-two no-print">
+      <button class="btn sm" data-act="carry" ${undone.length ? '' : 'disabled'}>Carry over unfinished (${undone.length})</button>
+      <button class="btn sm" data-act="repeatToday" ${activeTasks(t).length ? '' : 'disabled'}>Repeat today, adjusted</button></div>`;
+    const woops = S.woops.filter(w => w.active && (w.obstacle || w.plan));
+    if (rec.length || woops.length) {
+      h += '<div class="cy-pair">';
+      if (rec.length) h += sec('sugs', '7/10 suggestions', `<p class="small muted" style="margin-top:0">From your recent tasks. Below ${st.targetDifficulty - st.tolerance}/10 actual difficulty, add load. Above ${st.targetDifficulty + st.tolerance}, ease off.</p>` +
+        rec.map(({ t: x, s }, i) => `<div class="rule-row"><div class="t"><b>${esc(x.what)}</b><div class="small muted">${s ? esc(s.text) : 'Rate actual difficulty to get overload suggestions.'}</div></div>
+         <button class="btn pill" data-act="addSug" data-i="${i}">Add</button></div>`).join(''));
+      if (woops.length) h += sec('ifthen', 'Your if-then plans', woops.map(w => `<div class="rule-row"><div class="t"><b>${esc(w.wish)}</b><div class="small">If <i>${esc(w.obstacle)}</i>, then <i>${esc(w.plan)}</i>.</div></div></div>`).join(''));
+      h += '</div>';
+    }
+    h += pbHints(dayHints(k).map(([c, m]) => [c, esc(m)]));
+    h += pbTasks(k, 'plan', 'Nothing planned for tomorrow yet.') + pbAdd(k);
+    return h;
+  },
+  focus() {
+    const tm = S.settings.timer, k = todayKey();
+    if (T.left == null) tSet('work', tm.work);
+    const task = T.taskId ? findTask(T.taskKey, T.taskId) : null;
+    const ts = activeTasks(k).filter(t => !t.done), next = ts.find(t => t.id !== T.taskId);
+    const today = S.sessions.filter(s => s.d === k);
+    const label = { work: 'Deep work', break: 'Break', starter: 'Starter' }[T.mode];
+    const on = Math.floor((1 - T.left / T.total) * 30), state = T.running ? (T.mode === 'break' ? 'On break' : 'In the zone') : 'Paused';
+    let h = `<h1 class="title">Focus</h1>
+      <div class="card focus-card pb-core">
+        <div class="row between"><span class="eyebrow">${label}${T.mode !== 'starter' ? ' · block ' + T.cycle : ''}</span><span class="chip pb-state ${T.running ? 'run' : ''}">${T.running ? px('check', 14) : ''}${state}</span></div>
+        <div class="pb-tm"><div class="time" id="tdisp">${mmss(T.left)}</div><div><b class="task-name">${esc(task ? task.what : T.mode === 'break' ? 'Rest your eyes' : 'Pick a task below')}</b><p class="msg muted">${esc(T.mode === 'break' ? tm.breakMsg : tm.workMsg)}</p></div></div>
+        <div class="pb-seg30" id="tblocks">${Array.from({ length: 30 }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('')}</div>
+        <div class="pb-ctrls"><button class="btn sm" data-act="tPlus5">+5 min</button>
+          <button class="btn primary" data-act="tToggle">${px(T.running ? 'pause' : 'play', 16)}${T.running ? 'Pause' : 'Start'}</button>
+          <button class="btn icon" data-act="tSkip" aria-label="Skip to ${T.mode === 'break' ? 'work' : 'break'}">${px('skip', 16)}</button>
+          ${T.left < T.total ? `<button class="btn sm" data-act="tReset">${px('reset', 14)}Reset</button>` : ''}</div>
+        ${next ? `<button class="pb-next" data-act="focusTask" data-k="${k}" data-id="${next.id}"><span class="eyebrow">Next up</span><b>${esc(next.what || 'Untitled')}</b>${kindOf(next) ? `<span class="tag ${kindOf(next)}"><i>${kindOf(next)[0].toUpperCase()}</i>${kindOf(next)}</span>` : ''}</button>` : ''}
+      </div>`;
+    if (T.ask) h += `<div class="card pb-ask"><b>Starter done. Am I willing to continue?</b><div class="pb-two"><button class="btn sm" data-act="tContinue">${px('check', 14)}Yes, full ${tm.work}-min block</button><button class="btn sm" data-act="tStop">Not now, that's okay</button></div></div>`;
+    h += `<div class="card pb-mind"><button class="pb-mrow" data-act="reframe">${px('bulb', 16)}<b>Mind wandering?</b>${px(T.reframe != null ? 'cu' : 'cd', 16)}</button><p class="small muted">Reframe the task and get back on track.</p>`;
+    if (T.reframe != null) {
+      const q = S.settings.reframePrompts[T.reframe] || '', why = S.settings.myWhy;
+      const woops = S.woops.filter(w => w.active && w.wish), subj = task ? task.what : 'what I am studying';
+      h += `<div class="pb-lv"><span>Cognitive reframing</span><b>${esc(q)}</b></div>
+        <div class="pb-lv"><span>My why</span><b>${why ? esc(why) : '<span class="muted">Add it in Settings</span>'}</b></div>
+        ${woops.length ? `<div class="pb-lv"><span>Wishes</span><b>${woops.map(w => esc(w.wish)).join(' · ')}</b></div>` : ''}
+        <div class="pb-lv"><span>Ask a chatbot</span><b id="aiprompt">What are the real-life implications of ${esc(subj)}, and how can I apply it?</b></div>
+        <div class="row"><button class="btn pill" data-act="copyAi">${px('copy', 14)}Copy question</button><button class="btn pill" data-act="reframe">${px('refresh', 14)}Another prompt</button></div>`;
+    }
+    h += `</div><div class="card pb-work"><div class="row pb-on"><span class="eyebrow">Work on</span><select data-act-change="pickFocusTask" aria-label="Task to focus on"><option value="">No specific task</option>${ts.map(t => `<option value="${t.id}" ${T.taskId === t.id ? 'selected' : ''}>${esc(t.what || 'Untitled')}</option>`).join('')}</select></div>
+      <div class="row"><button class="chip" data-act="tStarter" data-m="${tm.starterG0}">Grade 0 · ${tm.starterG0} min</button><button class="chip" data-act="tStarter" data-m="${tm.starterG1}">Grade 1 · ${tm.starterG1} min</button></div>
+      <p class="small muted">Can't start? Do the tiny version. No pressure to do more.</p></div>`;
+    const workMin = today.filter(s => s.type !== 'break').reduce((a, s) => a + s.m, 0);
+    h += sec('pbtoday', `Today: ${workMin} min`, `<p class="small muted" style="margin:0 0 10px">${today.length ? today.slice(-8).map(s => `${s.m}m${s.task ? ' ' + esc(s.task) : ''}`).join(' · ') : 'No blocks yet.'}</p>
+      <div class="grid g4">
+        <label class="f"><span>Work</span>${inp('set|timer.work', tm.work, 'type="number" min="1"')}</label>
+        <label class="f"><span>Break</span>${inp('set|timer.brk', tm.brk, 'type="number" min="1"')}</label>
+        <label class="f"><span>Long every</span>${inp('set|timer.longEvery', tm.longEvery, 'type="number" min="0" title="0 = never"')}</label>
+        <label class="f"><span>Long break</span>${inp('set|timer.longBrk', tm.longBrk, 'type="number" min="1"')}</label>
+      </div>`, `<span class="cnt">${today.length} block${today.length === 1 ? '' : 's'}</span>`);
+    return h;
+  },
+};
+
 const CMD_HELP = 'today | tomorrow | focus | woop | manual | insights | history | settings | 1-8 | add <task> | done <n> | start | pause | reset | style <name> | help';
 function runCmd(raw) {
   const [c0, ...rest] = raw.trim().split(/\s+/), c = (c0 || '').toLowerCase(), arg = rest.join(' ');
@@ -1431,7 +1647,7 @@ function download(name, text, type) { const a = document.createElement('a'); a.h
 const ACT = {
   deckDone(el) { const t = findTask(el.dataset.k, el.dataset.id); if (!t) return; t.done = true; save(); render(); toast('Done: ' + (t.what || 'task')); },
   deckSkip() { deckSkip++; render(); },
-  menu() { document.documentElement.classList.toggle('menu-open'); },
+  menu(el, e) { e?.preventDefault(); document.documentElement.classList.toggle('menu-open'); },
   setGrade(el) { const t = findTask(el.dataset.k, el.dataset.id); if (!t) return; t.grade = el.dataset.v; save(); render(); },
   pickOpen(el) { const i = el.querySelector('input'); try { i.showPicker(); } catch (e) { i.focus(); } },
   setval(el) {
@@ -1439,10 +1655,10 @@ const ACT = {
     const v = +el.dataset.v; t[f] = t[f] === v ? null : v; save(); render();
   },
   addTask(el) {
-    const k = el.dataset.k, t = newTask(); getDay(k, true).tasks.push(t); openTask.add(t.id); save(); render();
+    const k = el.dataset.k, t = newTask(); getDay(k, true).tasks.push(t); if (layout() === 'paper') openTask.clear(); openTask.add(t.id); save(); render();
     document.querySelector(`.editor[data-id="${t.id}"] .what`)?.focus();
   },
-  toggleTask(el) { const id = el.dataset.id; openTask.has(id) ? openTask.delete(id) : openTask.add(id); render(); },
+  toggleTask(el) { const id = el.dataset.id; if (openTask.has(id)) openTask.delete(id); else { if (layout() === 'paper') openTask.clear(); openTask.add(id); } render(); },
   startFocus() { const k = todayKey(), t = activeTasks(k).find(x => !x.done); if (t) ACT.focusTask({ dataset: { k, id: t.id } }); else go('focus'); },
   tToggle() { T.running ? tPause() : tStart(); render(); },
   tPlus5() { if (T.left == null) return; T.left += 300; T.total += 300; if (T.running) T.endAt += 300000; nativeSchedule(); render(); },
@@ -1504,6 +1720,8 @@ const ACT = {
   reframe() { const n = S.settings.reframePrompts.length; if (!n) return toast('Add reframing prompts in Settings'); let i; do { i = Math.floor(Math.random() * n); } while (n > 1 && i === T.reframe); T.reframe = i; render(); },
   copyAi() { copyText($('#aiprompt')?.textContent || ''); },
   addWoop() { S.woops.push({ id: uid(), wish: '', outcome: '', obstacle: '', plan: '', active: true, created: todayKey() }); save(); render(); document.querySelector('.woop input')?.focus(); },
+  pbTheme(el) { S.settings.theme = el.dataset.v; save(); applyTheme(); render(); },
+  pbWoop(el) { const w = S.woops.find(x => x.id === el.dataset.id), id = 'woop:' + el.dataset.id; S.ui.open[id] = !(w.active ? S.ui.open[id] !== false : S.ui.open[id]); save(); render(); },
   delWoop: async el => { if (!(await confirmBox('Delete this WOOP?', 'Delete', 'danger'))) return; S.woops = S.woops.filter(w => w.id !== el.dataset.id); save(); render(); },
   async visualize(el) {
     const w = S.woops.find(x => x.id === el.dataset.id); if (!w) return;
