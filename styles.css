@@ -2558,3 +2558,8 @@ ul.timeline::before{content:"";position:absolute;left:62px;top:6px;bottom:6px;wi
 :root[data-style="mono"] .stylepick .sw{height:auto;min-height:0;padding:0;margin:0;align-items:center}
 :root[data-style="mono"] .stylepick button>span:last-child{line-height:11px}
 :root[data-style="mono"] .stylepick button.on>span:last-child,:root[data-style="mono"] .stylepick button.on b{color:var(--on)}
+
+/* ===================== SIMPLE VERSIONS (Paper Box Simple, B&W Simple) =====================
+   Same look as the base style; html[data-simple] only adjusts what the shorter screens need. */
+[data-style="paperbox"][data-simple] .pb-fields>.f.w{grid-column:1/-1}
+[data-simple] .editor [data-act="moreTask"]{margin-top:10px}
