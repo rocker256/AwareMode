@@ -38,7 +38,7 @@ const TABS = [
 
 function defaultSettings() {
   return {
-    appName: 'Aware Mode', myWhy: '', style: 'paperbox', theme: 'auto', accent: '#e4572e', fontScale: 100, weekStart: 1,
+    appName: 'Aware Mode', myWhy: '', style: 'paperbox', simple: false, theme: 'auto', accent: '#e4572e', fontScale: 100, weekStart: 1,
     targetDifficulty: 7, hardTasksTarget: 2, maxTasks: 6, easyMax: 4, tolerance: 1, overloadStep: 20, lookback: 3,
     winThreshold: 60, planReminderHour: 18, showPrinciple: true, showFactorsOnToday: true, showJournalOnToday: true, showRulesOnToday: true,
     labels: { what: 'What exactly', howMuch: 'How much', when: 'When', where: 'Where' },
@@ -249,7 +249,16 @@ const STYLES = [
   { id: 'cyberpunk', name: 'Cyberpunk', layout: 'cyber', fixedAccent: true, note: 'Neon HUD. Cut panels, terminal data, one cyan action.', sw: ['#05040A', '#15131F', '#00F0FF', '#FF2BD6'] },
   { id: 'paperbox', name: 'Paper Box', layout: 'paper', fixedAccent: true, note: 'Cream paper, ink outlines, hard shadows, one coral accent.', sw: ['#F5ECDE', '#FFFFFF', '#F8704F', '#141414'] },
   { id: 'mono', name: 'B&W', layout: 'mono', fixedAccent: true, note: 'White cards, black pill titles, dotted outlines. Features only.', sw: ['#FFFFFF', '#111111', '#D4D4D4', '#F2F2F2'] },
+  // Simple versions: the same look as their base style with only the essentials on screen (settings.simple), extras one tap away
+  { id: 'paperbox-simple', base: 'paperbox', simple: true, name: 'Paper Box Simple', note: 'Paper Box with only the essentials. Tasks, focus, check-in.', sw: ['#F5ECDE', '#FFFFFF', '#F8704F', '#141414'] },
+  { id: 'mono-simple', base: 'mono', simple: true, name: 'B&W Simple', note: 'B&W with only the essentials. Tasks, focus, check-in.', sw: ['#FFFFFF', '#111111', '#D4D4D4', '#F2F2F2'] },
 ];
+const styleId = () => (S.settings.style || 'pixel') + (simple() ? '-simple' : '');
+const simple = () => !!S.settings.simple && (S.settings.style === 'paperbox' || S.settings.style === 'mono');
+const SIMPLE_BAR = ['attack', 'plan', 'focus'];
+const SIMPLE_SET = ['s-style', 's-timer', 's-tabs', 's-data'];
+const moreTask = new Set();
+let allSettings = false;
 const isMono = () => S.settings.style === 'mono';
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
 function applyTheme() {
@@ -260,6 +269,7 @@ function applyTheme() {
   root.dataset.style = def.id;
   // a style can bring its own layout (navigation, structure), not only colours
   root.dataset.layout = def.layout || 'tabs';
+  if (simple()) root.dataset.simple = ''; else delete root.dataset.simple;
   root.classList.remove('menu-open');
   // Pixel B&W and the layout styles bring their own palette, so the accent colour applies to the rest
   if (def.id === 'bw' || def.fixedAccent) root.style.removeProperty('--accent'); else root.style.setProperty('--accent', st.accent);
@@ -494,10 +504,10 @@ function renderNav() {
 const PB_EYEBROW = { attack: 'Attack today', plan: 'Build a tomorrow', focus: '30/10 system', woop: 'Clarity creates execution', manual: 'Treat yourself as a company', insights: 'Track · reflect · adjust', history: "Everything you've written", settings: 'Everything is yours to change' };
 const pbIcon = id => id === 'attack' ? 'today' : id;
 function pbNav(v) {
-  const tabs = navTabs(), bar = tabs.length <= 5 ? tabs : tabs.slice(0, 4);
-  const cur = tabs.find(t => t.id === v), over = tabs.length > 5 && cur && !bar.includes(cur);
+  const sm = simple(), tabs = navTabs(), bar = sm ? tabs.filter(t => SIMPLE_BAR.includes(t.id)) : tabs.length <= 5 ? tabs : tabs.slice(0, 4);
+  const cur = tabs.find(t => t.id === v), over = (sm || tabs.length > 5) && cur && !bar.includes(cur);
   let h = bar.map(t => `<a href="#${t.id}" class="${v === t.id ? 'on' : ''}" data-nav="${t.id}">${px(pbIcon(t.id), 22)}<span>${esc(t.label)}</span></a>`).join('');
-  if (tabs.length > 5) h += `<a href="#" class="more ${over ? 'on' : ''}" data-act="menu" aria-label="More tabs">${px(over ? pbIcon(cur.id) : 'more', 22)}<span>${over ? esc(cur.label) : 'More'}</span></a>`;
+  if (sm || tabs.length > 5) h += `<a href="#" class="more ${over ? 'on' : ''}" data-act="menu" aria-label="More tabs">${px(over ? pbIcon(cur.id) : 'more', 22)}<span>${over ? esc(cur.label) : 'More'}</span></a>`;
   $('#nav').innerHTML = h;
   let m = $('#pbmenu');
   if (!m) { m = document.createElement('div'); m.id = 'pbmenu'; document.body.append(m); }
@@ -552,10 +562,10 @@ function taskEditor(k, t, mode) {
     const s = suggestFor(t.what, k);
     if (s) meta += `<span>${esc(s.text)}</span>${s.qty != null && s.qty !== t.qty ? ` <button class="btn sm" data-act="applySug" data-k="${k}" data-id="${t.id}" data-q="${s.qty}">Apply</button>` : ''}`;
   }
-  const pb = st.style === 'paperbox', kind = kindOf(t);
+  const pb = st.style === 'paperbox', kind = kindOf(t), adv = !simple() || moreTask.has(t.id);
   return `${pb ? `<div class="pb-scrim" data-act="toggleTask" data-id="${t.id}"></div>` : ''}<div class="editor" data-id="${t.id}">
     ${pb ? `<div class="pb-sh"><i class="handle"></i><div class="row"><b>${t.what ? esc(t.what) : 'New task'}</b>${kind ? `<span class="tag ${kind}"><i>${kind[0].toUpperCase()}</i>${kind}</span>` : ''}<button class="icon-btn pb-x" data-act="toggleTask" data-id="${t.id}" aria-label="Close">${px('x', 16)}</button></div></div>` : ''}
-    ${pb ? `<div class="pb-fields">
+    ${pb && !adv ? `<div class="pb-fields"><label class="f w"><span>${esc(L.what)}</span>${inp(p + 'what', t.what, `class="what" placeholder="${esc(P.what)}"`)}</label></div>` : pb ? `<div class="pb-fields">
       <label class="f w"><span>${esc(L.what)}</span>${inp(p + 'what', t.what, `class="what" placeholder="${esc(P.what)}"`)}</label>
       <label class="f"><span>${esc(L.howMuch)}</span>${inp(p + 'qty', t.qty, 'type="number" step="any" inputmode="decimal" placeholder="0"')}</label>
       <label class="f"><span>Unit</span>${inp(p + 'unit', t.unit, `placeholder="${esc(P.unit)}"`)}</label>
@@ -573,8 +583,9 @@ function taskEditor(k, t, mode) {
       <div class="dial"><span class="lbl">Predicted difficulty<b>${t.pd ? t.pd + '/10' : ''}</b></span>${scale(p + 'pd', t.pd, tg)}</div>
       ${today ? `<div class="dial"><span class="lbl">Actual difficulty<b>${t.ad ? t.ad + '/10' : ''}</b></span>${scale(p + 'ad', t.ad, tg)}</div>` : ''}
     </div>
-    ${meta ? `<div class="meta">${meta}</div>` : ''}
-    <div class="grid g2">
+    ${meta && adv ? `<div class="meta">${meta}</div>` : ''}
+    ${adv ? '' : `<button class="btn pill" data-act="moreTask" data-id="${t.id}">${px('plus', 14)}More details</button>`}
+    ${adv ? `<div class="grid g2">
       ${st.style === 'cyberpunk' || pb ? `<div class="f cy-grade"><span>Starter grade</span><div class="seg">${[['full', 'Full task'], ['g1', `Grade 1: ${st.timer.starterG1}-min version`], ['g0', `Grade 0: ${st.timer.starterG0}-min version`]].map(([v, l]) => `<button type="button" class="${(t.grade || 'full') === v ? 'on' : ''}" data-act="setGrade" data-k="${k}" data-id="${t.id}" data-v="${v}">${l}</button>`).join('')}</div></div>` : `<label class="f"><span>Starter grade</span>
         <select data-bind="${p}grade" data-rr>
           <option value="full" ${t.grade === 'full' ? 'selected' : ''}>Full task</option>
@@ -582,13 +593,13 @@ function taskEditor(k, t, mode) {
           <option value="g0" ${t.grade === 'g0' ? 'selected' : ''}>Grade 0: ${st.timer.starterG0}-min version</option>
         </select></label>`}
       <label class="f"><span>Notes</span><textarea data-bind="${p}notes" rows="1" style="min-height:38px" placeholder="Obstacles, time spent, why">${esc(t.notes)}</textarea></label>
-    </div>
+    </div>` : ''}
     ${pb ? `<div class="pb-acts">
       <button class="btn" data-act="focusTask" data-k="${k}" data-id="${t.id}">${px('focus', 16)}Focus</button>
       ${today && !t.done && !t.movedTo ? `<button class="btn" data-act="moveTask" data-k="${k}" data-id="${t.id}">${px('arrow', 16)}To tomorrow</button>` : ''}
-      <button class="btn" data-act="dupTask" data-k="${k}" data-id="${t.id}">${px('copy', 16)}Duplicate</button>
+      ${adv ? `<button class="btn" data-act="dupTask" data-k="${k}" data-id="${t.id}">${px('copy', 16)}Duplicate</button>
       <button class="btn" data-act="mvTask" data-dir="-1" data-k="${k}" data-id="${t.id}">${px('up', 16)}Move up</button>
-      <button class="btn" data-act="mvTask" data-dir="1" data-k="${k}" data-id="${t.id}">${px('down', 16)}Move down</button>
+      <button class="btn" data-act="mvTask" data-dir="1" data-k="${k}" data-id="${t.id}">${px('down', 16)}Move down</button>` : ''}
       <button class="btn danger" data-act="delTask" data-k="${k}" data-id="${t.id}">${px('trash', 16)}Delete</button>
     </div>` : `<div class="row">
       <button class="btn sm" data-act="focusTask" data-k="${k}" data-id="${t.id}">${px('play', 9)} Focus</button>
@@ -1094,7 +1105,7 @@ const check = (label, bind, val) => `<label class="row small"><input type="check
 V.settings = () => {
   const st = S.settings, tm = st.timer, mo = st.style === 'mono', P = {};
   let h = mo ? '' : `<div class="eyebrow">Everything is yours to change</div><h1 class="title"><u>Settings</u></h1>`;
-  P['s-style'] = sec('s-style', 'Style', `<div class="stylepick">${STYLES.map(s => `<button class="${(st.style || 'pixel') === s.id ? 'on' : ''}" data-act="setStyle" data-v="${s.id}" aria-pressed="${(st.style || 'pixel') === s.id}"><span class="sw">${s.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><span><b>${s.name}</b><br><span>${s.note}</span></span></button>`).join('')}</div>
+  P['s-style'] = sec('s-style', 'Style', `<div class="stylepick">${STYLES.map(s => `<button class="${styleId() === s.id ? 'on' : ''}" data-act="setStyle" data-v="${s.id}" aria-pressed="${styleId() === s.id}"><span class="sw">${s.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><span><b>${s.name}</b><br><span>${s.note}</span></span></button>`).join('')}</div>
     <p class="small muted">Only the look changes. All your data and features stay the same. Light/dark still follows the Theme setting below.${st.style === 'bw' ? ' Pixel B&W ignores the accent colour.' : ''}</p>`);
   P['s-general'] = sec('s-general', 'General', `<div class="grid g2">
       ${field('App name', 'set|appName', st.appName)}
@@ -1155,6 +1166,8 @@ V.settings = () => {
   const order = mo ? ['s-style', 's-general', 's-710', 'mo-pair', 's-tabs', 's-flex', 's-timer', 's-manual', 's-data']
     : ['s-style', 's-general', 's-710', 's-labels', 's-flex', 's-timer', 's-factors', 's-journal', 's-reframe', 's-loading', 's-principles', 's-manual', 's-tabs', 's-data'];
   P['mo-pair'] = `<div class="mo-pair">${P['s-labels']}${P['s-factors']}${P['s-journal']}${P['s-reframe']}</div>`;
+  // Simple styles: only the everyday sections until you ask for the rest
+  if (simple() && !allSettings) return h + SIMPLE_SET.map(id => P[id]).join('') + `<button class="btn ${mo ? 'grey' : 'pill'} block" data-act="allSettings">${px('plus', 14)}Show all settings</button>`;
   return h + order.map(id => P[id]).join('');
 };
 
@@ -1441,7 +1454,8 @@ function pbRules(k) {
 const pbAdd = (k, label = 'Add task') => `<button class="pb-dash no-print" data-act="addTask" data-k="${k}">${px('plus', 16)}${label}</button>`;
 function pbTasks(k, mode, empty) {
   const st = S.settings, d = S.days[k] || { tasks: [] };
-  return `<div class="card pb-tasks"><div class="row between pb-th"><b>Tasks</b><span class="eyebrow">Next day attack goal ${st.targetDifficulty}/10</span></div>
+  const ts = activeTasks(k), goal = simple() ? (ts.length ? `${ts.filter(x => x.done).length} of ${ts.length} done` : '') : `Next day attack goal ${st.targetDifficulty}/10`;
+  return `<div class="card pb-tasks"><div class="row between pb-th"><b>Tasks</b><span class="eyebrow">${goal}</span></div>
     <div class="tasks">${d.tasks.length ? d.tasks.map((x, i) => taskRow(k, x, i, mode)).join('') : `<div class="empty-row">${empty}</div>`}</div></div>`;
 }
 LV.paper = {
@@ -1467,22 +1481,22 @@ LV.paper = {
     const done = ts.filter(x => x.done).length, pctDone = ts.length ? Math.round(done / ts.length * 100) : 0;
     const ad = dayAvg(k, 'ad'), pd = dayAvg(k, 'pd');
     const mins = S.sessions.filter(s => s.d === k && s.type !== 'break').reduce((a, s) => a + s.m, 0);
-    const reg = regression(), tomorrowEmpty = !activeTasks(addDays(t, 1)).length;
+    const reg = regression(), tomorrowEmpty = !activeTasks(addDays(t, 1)).length, sm = simple();
     let h = '';
-    if (st.showPrinciple && st.principles.length) { const pr = esc(st.principles[(parseKey(k).getTime() / 864e5 | 0) % st.principles.length]); h += `<div class="pb-tick" aria-label="Principle of the day: ${pr}"><div><span>Principle ✦ ${pr} ✦&nbsp;</span><span aria-hidden="true">Principle ✦ ${pr} ✦&nbsp;</span></div></div>`; }
+    if (st.showPrinciple && st.principles.length && !sm) { const pr = esc(st.principles[(parseKey(k).getTime() / 864e5 | 0) % st.principles.length]); h += `<div class="pb-tick" aria-label="Principle of the day: ${pr}"><div><span>Principle ✦ ${pr} ✦&nbsp;</span><span aria-hidden="true">Principle ✦ ${pr} ✦&nbsp;</span></div></div>`; }
     h += `<div class="dayhead"><div><div class="eyebrow">${k === t ? 'Attack today' : k > t ? 'Planned day' : 'Past day'}</div>
       <h1 class="title">${k === t ? 'Today' : esc(niceDate(k, { weekday: 'short' }))}</h1></div>
       <div class="pb-date no-print"><button data-act="shiftDate" data-n="-1" aria-label="Previous day">${px('cl', 16)}</button>
         <label data-act="pickOpen">${px('cal', 14)}<span>${esc(parseKey(k).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }))}</span><input type="date" value="${k}" data-act-change="pickDate" aria-label="Pick date"></label>
         <button data-act="shiftDate" data-n="1" aria-label="Next day">${px('chev', 16)}</button></div>
-      <div class="row no-print pb-hbtn">${k !== t ? '<button class="btn pill" data-act="goToday">Today</button>' : ''}<button class="btn pill" data-act="goHistory">History</button></div></div>`;
+      <div class="row no-print pb-hbtn">${k !== t ? '<button class="btn pill" data-act="goToday">Today</button>' : ''}${sm ? '' : '<button class="btn pill" data-act="goHistory">History</button>'}</div></div>`;
     const al = [];
     if (k === t && new Date().getHours() >= st.planReminderHour && tomorrowEmpty) al.push(['accent', 'Plan tomorrow before today ends. <a class="pb-lk" href="#plan">Build tomorrow' + px('arrow', 14) + '</a>']);
     if (reg && (reg.level === 'bad' || reg.level === 'warn') && k === t) al.push([reg.level, `${esc(reg.msg)} <a class="pb-lk" href="#manual">Open manual</a>`]);
     if (status !== 'normal') al.push(['good', status === 'rest' ? "Rest day. Recovery is part of the system and it won't break your streak." : 'Grace day. Life happened. The streak is protected; do what you can.']);
     dayHints(k).forEach(([c, m]) => al.push([c, esc(m)]));
-    h += pbHints(al);
-    h += `<div class="card pb-hero"><div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${done} of ${ts.length} done</div></div>
+    h += pbHints(sm ? al.slice(0, 1).filter(x => x[0] === 'accent') : al);
+    if (!sm) h += `<div class="card pb-hero"><div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${done} of ${ts.length} done</div></div>
       <div class="pb-meters">
         <div><span class="lbl">Planned</span>${pbBlocks(Math.round(pd || 0), 'f')}<b>${pd != null ? Math.round(pd) : '–'}/10</b></div>
         <div><span class="lbl">Actual</span>${pbBlocks(Math.round(ad || 0), 'c')}<b>${ad != null ? Math.round(ad) : '–'}/10</b></div>
@@ -1493,8 +1507,8 @@ LV.paper = {
     h += pbTasks(k, 'today', `No tasks yet. Aim for ${st.hardTasksTarget} tasks around ${st.targetDifficulty}/10, the rest easier.`);
     h += `<div class="pb-two no-print">${pbAdd(k)}${k === t && ts.some(x => !x.done) ? `<button class="btn primary" data-act="startFocus">${px('play', 16)}Start focus</button>` : ''}</div>`;
     if (st.showRulesOnToday) h += sec('rules', 'Manual check-in', pbRules(k), compBadge(k));
-    if (st.showFactorsOnToday || st.showJournalOnToday) h += `<div class="cy-pair">${st.showFactorsOnToday ? sec('factors', 'Factors', factorsForm(k)) : ''}${st.showJournalOnToday ? sec('journal', 'Feedback journal', journalForm(k)) : ''}</div>`;
-    if (!NATIVE) h += `<div class="row no-print" style="justify-content:flex-end"><button class="btn pill" data-act="print">${px('print', 14)}Print sheet</button></div>`;
+    if (!sm && (st.showFactorsOnToday || st.showJournalOnToday)) h += `<div class="cy-pair">${st.showFactorsOnToday ? sec('factors', 'Factors', factorsForm(k)) : ''}${st.showJournalOnToday ? sec('journal', 'Feedback journal', journalForm(k)) : ''}</div>`;
+    if (!NATIVE && !sm) h += `<div class="row no-print" style="justify-content:flex-end"><button class="btn pill" data-act="print">${px('print', 14)}Print sheet</button></div>`;
     return h + sheetForPrint(k);
   },
   plan() {
@@ -1614,14 +1628,14 @@ function moTaskRow(k, t, i, mode) {
 }
 function moEditor(k, t, mode) {
   const st = S.settings, L = st.labels, P = st.placeholders, tg = st.targetDifficulty, today = mode === 'today';
-  const p = `task|${k}|${t.id}|`, a = `data-k="${k}" data-id="${t.id}"`;
+  const p = `task|${k}|${t.id}|`, a = `data-k="${k}" data-id="${t.id}"`, adv = !simple() || moreTask.has(t.id);
   let meta = '';
   if (!today && t.what) { const s = suggestFor(t.what, k); if (s) meta = `<div class="mo-meta"><span class="muted">${esc(s.text)}</span>${s.qty != null && s.qty !== t.qty ? `<button class="tx" data-act="applySug" ${a} data-q="${s.qty}">Apply</button>` : ''}</div>`; }
   const act = (icon, label, attrs) => `<button class="mo-act" ${attrs}><span class="mo-rb">${px(icon, 16)}</span>${label}</button>`;
   return `<div class="pb-scrim" data-act="toggleTask" data-id="${t.id}"></div><div class="editor" data-id="${t.id}">
     <div class="mo-sh"><b>${t.what ? esc(t.what) : 'New task'}</b><button class="btn xs danger" data-act="delTask" ${a}>${px('x', 13)}Delete</button><button class="mo-x" data-act="toggleTask" data-id="${t.id}" aria-label="Close">${px('x', 20)}</button></div>
     <label class="f"><span>${esc(L.what)}</span>${inp(p + 'what', t.what, `class="what" placeholder="${esc(P.what)}"`)}</label>
-    <div class="mo-g4">
+    ${adv ? `<div class="mo-g4">
       <label class="f"><span>${esc(L.howMuch)}</span>${inp(p + 'qty', t.qty, 'type="number" step="any" inputmode="decimal" placeholder="0"')}</label>
       <label class="f"><span>&nbsp;</span>${inp(p + 'unit', t.unit, `placeholder="${esc(P.unit)}" aria-label="Unit"`)}</label>
       <label class="f"><span>${esc(L.when)}</span>${inp(p + 'when', t.when, 'type="time"')}</label>
@@ -1630,17 +1644,17 @@ function moEditor(k, t, mode) {
     <div class="mo-g2">
       <label class="f"><span>Detail</span>${inp(p + 'detail', t.detail, `placeholder="${esc(P.detail)}"`)}</label>
       <label class="f"><span>Notes</span>${inp(p + 'notes', t.notes, 'placeholder="Notes"')}</label>
-    </div>
+    </div>` : ''}
     <div class="f"><span class="lbl">Predicted difficulty</span>${scale(p + 'pd', t.pd, tg)}</div>
     ${today ? `<div class="f"><span class="lbl">Actual difficulty</span>${scale(p + 'ad', t.ad, tg)}</div>` : ''}
-    ${meta}
-    <div class="f"><span class="lbl">Starter grade</span><div class="seg mo-grade">${[['full', 'Full task'], ['g1', `Grade 1: ${st.timer.starterG1}-min version`], ['g0', `Grade 0: ${st.timer.starterG0}-min version`]].map(([v, l]) => `<button type="button" class="${(t.grade || 'full') === v ? 'on' : ''}" data-act="setGrade" ${a} data-v="${v}">${l}</button>`).join('')}</div></div>
+    ${adv ? meta : `<button class="tx" data-act="moreTask" data-id="${t.id}">${px('plus', 14)}More details</button>`}
+    ${adv ? `<div class="f"><span class="lbl">Starter grade</span><div class="seg mo-grade">${[['full', 'Full task'], ['g1', `Grade 1: ${st.timer.starterG1}-min version`], ['g0', `Grade 0: ${st.timer.starterG0}-min version`]].map(([v, l]) => `<button type="button" class="${(t.grade || 'full') === v ? 'on' : ''}" data-act="setGrade" ${a} data-v="${v}">${l}</button>`).join('')}</div></div>` : ''}
     <div class="mo-acts">
       ${act('focus', 'Focus', `data-act="focusTask" ${a}`)}
       ${today && !t.done && !t.movedTo ? act('plan', 'To tomorrow', `data-act="moveTask" ${a}`) : ''}
-      ${act('copy', 'Duplicate', `data-act="dupTask" ${a}`)}
+      ${adv ? `${act('copy', 'Duplicate', `data-act="dupTask" ${a}`)}
       ${act('up', 'Move up', `data-act="mvTask" data-dir="-1" ${a}`)}
-      ${act('down', 'Move down', `data-act="mvTask" data-dir="1" ${a}`)}
+      ${act('down', 'Move down', `data-act="mvTask" data-dir="1" ${a}`)}` : ''}
       <button class="btn primary" data-act="toggleTask" data-id="${t.id}">Save</button>
     </div>
   </div>`;
@@ -1706,7 +1720,7 @@ LV.mono = {
     const done = ts.filter(x => x.done).length, pctDone = ts.length ? Math.round(done / ts.length * 100) : 0;
     const ad = dayAvg(k, 'ad'), pd = dayAvg(k, 'pd');
     const mins = S.sessions.filter(s => s.d === k && s.type !== 'break').reduce((a, s) => a + s.m, 0);
-    const reg = regression(), remind = k === t && new Date().getHours() >= st.planReminderHour && !activeTasks(addDays(t, 1)).length;
+    const reg = regression(), remind = k === t && new Date().getHours() >= st.planReminderHour && !activeTasks(addDays(t, 1)).length, sm = simple();
     let h = `<div class="mo-ds no-print"><button class="mo-rb" data-act="shiftDate" data-n="-1" aria-label="Previous day">${px('cl', 14)}</button>`;
     for (let i = -2; i <= 2; i++) {
       const kk = addDays(k, i), dd = parseKey(kk), lab = `<span>${DOW[dd.getDay()]}</span><b>${dd.getDate()}</b>`;
@@ -1714,7 +1728,7 @@ LV.mono = {
         : `<label class="d on" data-act="pickOpen">${lab}<input type="date" value="${k}" data-act-change="pickDate" aria-label="Pick date"></label>`;
     }
     h += `<button class="mo-rb" data-act="shiftDate" data-n="1" aria-label="Next day">${px('chev', 14)}</button></div>
-      <div class="mo-row no-print">${k !== t ? '<button class="tx" data-act="goToday">Today</button>' : ''}<button class="tx" data-act="goHistory">${px('history', 14)}History</button>${NATIVE ? '' : `<button class="tx" data-act="print">${px('print', 14)}Print sheet</button>`}
+      ${sm ? `<div class="mo-row no-print">${k !== t ? '<button class="tx" data-act="goToday">Today</button>' : ''}<span class="muted"><b>${done}</b> of ${ts.length} done</span>${remind ? `<a class="btn sm grey" href="#plan" data-nav="plan">Build tomorrow${px('chev', 14)}</a>` : ''}</div>` : `<div class="mo-row no-print">${k !== t ? '<button class="tx" data-act="goToday">Today</button>' : ''}<button class="tx" data-act="goHistory">${px('history', 14)}History</button>${NATIVE ? '' : `<button class="tx" data-act="print">${px('print', 14)}Print sheet</button>`}
         ${remind ? `<a class="btn sm grey" href="#plan" data-nav="plan">Build tomorrow${px('chev', 14)}</a>` : ''}</div>
       <div class="mo-box mo-read"><div class="mo-hero"><span class="mo-big">${pctDone}<small> %</small></span><span class="muted">${done} of ${ts.length} done</span></div>
         <div class="mo-meters">
@@ -1723,13 +1737,13 @@ LV.mono = {
           <div><span class="lbl">Mix</span>${moMix(ts)}<span class="muted">target ${st.hardTasksTarget} hard</span></div>
         </div></div>
       <div class="mo-day" role="group" aria-label="Day type">${['normal', 'grace', 'rest'].map(s => `<button class="chip ${status === s ? 'on' : ''}" data-act="setStatus" data-k="${k}" data-v="${s}">${s === 'normal' ? 'Attack' : s === 'grace' ? 'Grace' : 'Rest'}</button>`).join('')}
-        <span class="muted"><b>${mins}</b> min focused</span></div>`;
-    if (reg && (reg.level === 'bad' || reg.level === 'warn') && k === t) h += moIn('alert', `<a href="#manual">${esc(moReg(reg))}</a>`);
-    h += moHints(k).join('');
+        <span class="muted"><b>${mins}</b> min focused</span></div>`}`;
+    if (reg && (reg.level === 'bad' || reg.level === 'warn') && k === t && !sm) h += moIn('alert', `<a href="#manual">${esc(moReg(reg))}</a>`);
+    if (!sm) h += moHints(k).join('');
     h += moTasks(k, 'today', 'No tasks yet.') + moAdd(k);
-    h += `<div class="mo-two no-print">${k === t && ts.some(x => !x.done) ? `<button class="btn primary" data-act="startFocus">${px('play', 16)}Start focus</button>` : ''}${moGoal()}</div>`;
+    h += `<div class="mo-two no-print">${k === t && ts.some(x => !x.done) ? `<button class="btn primary" data-act="startFocus">${px('play', 16)}Start focus</button>` : ''}${sm ? '' : moGoal()}</div>`;
     if (st.showRulesOnToday) h += moChecks(k);
-    if (st.showFactorsOnToday || st.showJournalOnToday) h += `<div class="mo-pair">${st.showFactorsOnToday ? sec('factors', 'Factors', factorsForm(k)) : ''}${st.showJournalOnToday ? sec('journal', 'Feedback journal', journalForm(k)) : ''}</div>`;
+    if (!sm && (st.showFactorsOnToday || st.showJournalOnToday)) h += `<div class="mo-pair">${st.showFactorsOnToday ? sec('factors', 'Factors', factorsForm(k)) : ''}${st.showJournalOnToday ? sec('journal', 'Feedback journal', journalForm(k)) : ''}</div>`;
     return h + sheetForPrint(k);
   },
   plan() {
@@ -2068,7 +2082,9 @@ const ACT = {
   delRule: async el => { if (!(await confirmBox('Delete this policy and its history?', 'Delete', 'danger'))) return; S.rules = S.rules.filter(r => r.id !== el.dataset.id); save(); render(); },
   mvRule(el) { moveIn(S.rules, S.rules.findIndex(r => r.id === el.dataset.id), +el.dataset.dir); save(); render(); },
   range(el) { S.ui.range = +el.dataset.v; save(); render(); },
-  setStyle(el) { S.settings.style = el.dataset.v; save(); applyTheme(); render(); toast('Style: ' + STYLES.find(s => s.id === el.dataset.v).name); },
+  setStyle(el) { const s = STYLES.find(x => x.id === el.dataset.v); S.settings.style = s.base || s.id; S.settings.simple = !!s.simple; allSettings = false; save(); applyTheme(); render(); toast('Style: ' + s.name); },
+  moreTask(el) { moreTask.add(el.dataset.id); render(); },
+  allSettings() { allSettings = true; render(); },
   resetAccent() { S.settings.accent = defaultSettings().accent; applyTheme(); save(); render(); },
   toggleRest(el) { const v = +el.dataset.v, a = S.settings.restDays; const i = a.indexOf(v); if (i >= 0) a.splice(i, 1); else a.push(v); save(); render(); },
   leAdd(el) { getPath(S.settings, el.dataset.path).push(''); save(); render(); const r = document.querySelectorAll(`[data-bind^="list|${el.dataset.path}|"]`); r[r.length - 1]?.focus(); },
