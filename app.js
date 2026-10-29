@@ -129,6 +129,9 @@ function getDay(k, create) {
   return S.days[k];
 }
 function dayStatus(k) { const d = S.days[k]; if (d && d.status) return d.status; return S.settings.restDays.includes(weekday(k)) ? 'rest' : 'normal'; }
+// days before today are read-only: viewable everywhere, editable nowhere
+const isPast = k => /^\d{4}-\d\d-\d\d$/.test(k || '') && k < todayKey();
+function pastLocked(k) { if (!isPast(k)) return false; toast('Past days are read-only'); render(); return true; }
 function findTask(k, id) { const d = S.days[k]; return d && d.tasks.find(t => t.id === id); }
 function newTask(o = {}) { return Object.assign({ id: uid(), what: '', qty: null, unit: '', detail: '', when: '', where: '', pd: null, ad: null, done: false, grade: 'full', notes: '' }, o); }
 function kindOf(t) {
@@ -857,6 +860,7 @@ V.focus = () => {
     ${blocks(30, Math.floor((1 - T.left / T.total) * 30), 'on', 'tblocks')}
     <p class="msg muted">${esc(T.mode === 'break' ? tm.breakMsg : tm.workMsg)}</p>
     <div class="ctrls">
+      <button class="side" data-act="tMinus5" aria-label="Remove 5 minutes"><b>-5</b>min</button>
       <button class="side" data-act="tPlus5" aria-label="Add 5 minutes"><b>+5</b>min</button>
       <button class="main" data-act="tToggle" aria-label="${T.running ? 'Pause' : 'Start'}">${px(T.running ? 'pause' : 'play', 28)}</button>
       <button class="side" data-act="tSkip" aria-label="Skip to ${T.mode === 'break' ? 'work' : 'break'}"><b>&gt;&gt;</b>skip</button>
@@ -1397,7 +1401,7 @@ LV.cyber = {
       <div class="cy-tinfo"><div class="eyebrow">${label}${T.mode !== 'starter' ? ' · block ' + T.cycle : ''}</div>
         <div class="task-name">${esc(task ? task.what : T.mode === 'break' ? 'Rest your eyes' : 'Pick a task below')}</div>
         <p class="msg muted">${esc(T.mode === 'break' ? tm.breakMsg : tm.workMsg)}</p></div>
-      <div class="cy-ctrls"><button class="btn" data-act="tPlus5" aria-label="Add 5 minutes"><b>+5</b>min</button>
+      <div class="cy-ctrls"><button class="btn" data-act="tMinus5" aria-label="Remove 5 minutes"><b>-5</b>min</button><button class="btn" data-act="tPlus5" aria-label="Add 5 minutes"><b>+5</b>min</button>
         <button class="btn primary" data-act="tToggle">${px(T.running ? 'pause' : 'play', 16)}${T.running ? 'Pause' : 'Start'}</button>
         <button class="btn icon" data-act="tSkip" aria-label="Skip to ${T.mode === 'break' ? 'work' : 'break'}">${px('skip', 18)}</button>
         ${T.left < T.total ? `<button class="btn" data-act="tReset">${px('reset', 14)}Reset</button>` : ''}</div>
@@ -1553,7 +1557,7 @@ LV.paper = {
         <div class="row between"><span class="eyebrow">${label}${T.mode !== 'starter' ? ' · block ' + T.cycle : ''}</span><span class="chip pb-state ${T.running ? 'run' : ''}">${T.running ? px('check', 14) : ''}${state}</span></div>
         <div class="pb-tm"><div class="time" id="tdisp">${mmss(T.left)}</div><div><b class="task-name">${esc(task ? task.what : T.mode === 'break' ? 'Rest your eyes' : 'Pick a task below')}</b><p class="msg muted">${esc(T.mode === 'break' ? tm.breakMsg : tm.workMsg)}</p></div></div>
         <div class="pb-seg30" id="tblocks">${Array.from({ length: 30 }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('')}</div>
-        <div class="pb-ctrls"><button class="btn sm" data-act="tPlus5">+5 min</button>
+        <div class="pb-ctrls"><button class="btn sm" data-act="tMinus5">-5 min</button><button class="btn sm" data-act="tPlus5">+5 min</button>
           <button class="btn primary" data-act="tToggle">${px(T.running ? 'pause' : 'play', 16)}${T.running ? 'Pause' : 'Start'}</button>
           <button class="btn icon" data-act="tSkip" aria-label="Skip to ${T.mode === 'break' ? 'work' : 'break'}">${px('skip', 16)}</button>
           ${T.left < T.total ? `<button class="btn sm" data-act="tReset">${px('reset', 14)}Reset</button>` : ''}</div>
@@ -1772,7 +1776,7 @@ LV.mono = {
     let h = `<div class="mo-fh"><span class="muted">${label}${T.mode !== 'starter' ? ' · block ' + T.cycle : ''}</span><b>${esc(task ? task.what : T.mode === 'break' ? 'Rest your eyes' : 'Pick a task below')}</b></div>
       <div class="mo-ring">${moRing(on)}<div><span class="time" id="tdisp">${mmss(T.left)}</span><span>${state}</span></div></div>
       <p class="mo-msg">${esc(T.mode === 'break' ? tm.breakMsg : tm.workMsg)}</p>
-      <div class="mo-ctrls"><button class="mo-rb" data-act="tPlus5" aria-label="Add 5 minutes"><b>+5</b></button>
+      <div class="mo-ctrls"><button class="mo-rb" data-act="tMinus5" aria-label="Remove 5 minutes"><b>-5</b></button><button class="mo-rb" data-act="tPlus5" aria-label="Add 5 minutes"><b>+5</b></button>
         <button class="btn primary" data-act="tToggle">${px(T.running ? 'pause' : 'play', 16)}${T.running ? 'Pause' : 'Start'}</button>
         <button class="mo-rb" data-act="tSkip" aria-label="Skip to ${T.mode === 'break' ? 'work' : 'break'}">${px('skip', 20)}</button>
         <button class="mo-rb" data-act="tReset" aria-label="Reset">${px('reset', 20)}</button></div>`;
@@ -1915,7 +1919,9 @@ const layout = () => document.documentElement.dataset.layout || 'tabs';
 function render() {
   const v = V[S.ui.view] ? S.ui.view : 'attack';
   const y = window.scrollY;
-  $('#main').innerHTML = `<div class="wrap">${(LV[layout()]?.[v] || V[v])()}</div>`;
+  const ro = v === 'attack' && isPast(S.ui.date) ? `<div class="ro-note">Past day: view only</div>` : '';
+  $('#main').innerHTML = `<div class="wrap">${ro}${(LV[layout()]?.[v] || V[v])()}</div>`;
+  lockPast($('#main'));
   $('#main').dataset.view = v;
   document.querySelectorAll('#main .title').forEach(h => { h.dataset.t = h.textContent; });
   window.scrollTo(0, y);
@@ -1933,8 +1939,22 @@ function go(view) {
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 
 /* ---------- binding ---------- */
+const DAY_BINDS = ['task', 'day', 'factor', 'journal'];
+// actions that change the day in data-k (or data-path for setval); hidden ones are pure edit buttons
+const DAY_ACTS = ['deckDone', 'setGrade', 'setval', 'addTask', 'delTask', 'dupTask', 'mvTask', 'moveTask', 'applySug', 'setStatus', 'ruleSet', 'ruleCycle', 'factorSet'];
+const DAY_ACTS_HIDE = ['deckDone', 'addTask', 'delTask', 'dupTask', 'mvTask', 'moveTask', 'applySug'];
+const actDay = el => el.dataset.k || (el.dataset.act === 'setval' ? (el.dataset.path || '').split('|')[1] : '');
+function lockPast(root) {
+  root.querySelectorAll('[data-bind]').forEach(el => { const p = el.dataset.bind.split('|'); if (DAY_BINDS.includes(p[0]) && isPast(p[1])) el.disabled = true; });
+  root.querySelectorAll('[data-act]').forEach(el => {
+    const a = el.dataset.act;
+    if (!DAY_ACTS.includes(a) || !isPast(actDay(el))) return;
+    if (DAY_ACTS_HIDE.includes(a)) el.style.display = 'none'; else el.disabled = true;
+  });
+}
 function bindSet(el) {
   const parts = el.dataset.bind.split('|'), kind = parts[0];
+  if (DAY_BINDS.includes(kind) && pastLocked(parts[1])) return;
   let v = el.type === 'checkbox' ? el.checked : el.value;
   if (el.type === 'number' || 'num' in el.dataset) v = num(el.value);
   switch (kind) {
@@ -2006,6 +2026,14 @@ const ACT = {
   startFocus() { const k = todayKey(), t = activeTasks(k).find(x => !x.done); if (t) ACT.focusTask({ dataset: { k, id: t.id } }); else go('focus'); },
   tToggle() { T.running ? tPause() : tStart(); render(); },
   tPlus5() { if (T.left == null) return; T.left += 300; T.total += 300; if (T.running) T.endAt += 300000; nativeSchedule(); render(); },
+  // never below 1 minute left, so a running block is not ended by the button
+  tMinus5() {
+    if (T.left == null) return;
+    if (T.running) T.left = Math.max(0, Math.ceil((T.endAt - Date.now()) / 1000));
+    const cut = Math.min(300, T.left - 60);
+    if (cut <= 0) return toast('Less than a minute left');
+    T.left -= cut; T.total = Math.max(T.left, T.total - cut); if (T.running) T.endAt -= cut * 1000; nativeSchedule(); render();
+  },
   delTask: async el => { if (!(await confirmBox('Delete this task?', 'Delete', 'danger'))) return; const d = S.days[el.dataset.k]; d.tasks = d.tasks.filter(t => t.id !== el.dataset.id); save(); render(); },
   dupTask(el) { const d = S.days[el.dataset.k]; const i = d.tasks.findIndex(t => t.id === el.dataset.id); d.tasks.splice(i + 1, 0, newTask({ ...d.tasks[i], id: uid(), done: false, ad: null, movedTo: undefined })); save(); render(); },
   mvTask(el) { const d = S.days[el.dataset.k]; moveIn(d.tasks, d.tasks.findIndex(t => t.id === el.dataset.id), +el.dataset.dir); save(); render(); },
@@ -2132,7 +2160,7 @@ document.addEventListener('keydown', e => {
 document.addEventListener('click', e => {
   if (e.target.closest('label.check')) return;
   const a = e.target.closest('[data-act]');
-  if (a && ACT[a.dataset.act]) { ACT[a.dataset.act](a, e); return; }
+  if (a && ACT[a.dataset.act]) { if (DAY_ACTS.includes(a.dataset.act) && pastLocked(actDay(a))) return; ACT[a.dataset.act](a, e); return; }
   const n = e.target.closest('[data-nav]');
   if (n) { e.preventDefault(); document.documentElement.classList.remove('menu-open'); go(n.dataset.nav); }
   else if (e.target.id === 'scrim') document.documentElement.classList.remove('menu-open');
