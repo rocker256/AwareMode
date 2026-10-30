@@ -2563,3 +2563,10 @@ ul.timeline::before{content:"";position:absolute;left:62px;top:6px;bottom:6px;wi
    Same look as the base style; html[data-simple] only adjusts what the shorter screens need. */
 [data-style="paperbox"][data-simple] .pb-fields>.f.w{grid-column:1/-1}
 [data-simple] .editor [data-act="moreTask"]{margin-top:10px}
+
+/* ===== LOCKED PAST DAYS (all styles) ===== */
+.ro-note{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 12px;border:1px dashed var(--line-strong);color:var(--muted);font-size:.8rem;font-weight:600;letter-spacing:.02em}
+#main :is(input,textarea,select,button):disabled{cursor:default}
+#main :is(input,textarea,select):disabled{opacity:1;color:inherit;-webkit-text-fill-color:currentColor}
+/* the -5 min button makes these rows one button wider; let Reset wrap instead of overflowing */
+:root[data-style="cyberpunk"] .cy-ctrls,:root[data-style="paperbox"] .pb-ctrls{flex-wrap:wrap}
