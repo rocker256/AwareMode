@@ -33,6 +33,7 @@ const TABS = [
   { id: 'manual', label: 'Manual', icon: '▤' },
   { id: 'insights', label: 'Insights', icon: '↗' },
   { id: 'history', label: 'History', icon: '≡' },
+  { id: 'remind', label: 'Reminders', icon: '⏰' },
   { id: 'settings', label: 'Settings', icon: '⚙' },
 ];
 
@@ -84,21 +85,33 @@ function defaultSettings() {
       'A missed day is data, not a verdict. Check sleep, food, activity and noise before blaming discipline.',
       'Build a flexible system: grace days and rest days keep it alive.',
     ],
+    // reminders: taskLead = minutes before a task's When time (-1 = off)
+    remind: { taskLead: -1, sound: true, snooze: 10, missed: true },
     showSplash: true,
     loadingLines: ['Win the day before it starts.', 'Clarity creates execution.', 'Plan harder. Execute calmer.', 'Discipline creates freedom.', 'One block at a time.', 'Seven out of ten. Every day.'],
     tabs: TABS.map(t => ({ id: t.id, label: t.label, visible: true })),
   };
 }
 
+// starter reminders from the course method; all off until you switch one on
+function defaultReminders(st) {
+  const all = [0, 1, 2, 3, 4, 5, 6], h = Math.min(23, Math.max(0, +(st && st.planReminderHour) || 18));
+  return [
+    { id: 'r-attack', title: 'Attack today', note: "Open today's sheet and start the first block.", time: '08:00', days: all.slice(), date: '', on: false, go: 'attack' },
+    { id: 'r-plan', title: 'Plan tomorrow', note: 'Build tomorrow before today ends.', time: pad(h) + ':00', days: all.slice(), date: '', on: false, go: 'plan' },
+    { id: 'r-journal', title: 'Feedback journal', note: 'What worked, what did not, what changes tomorrow?', time: '21:30', days: all.slice(), date: '', on: false, go: 'attack' },
+  ];
+}
 function fresh() {
-  return { v: 1, settings: defaultSettings(), days: {}, rules: [], woops: [], sessions: [], ui: { view: 'attack', open: {}, range: 14, pb: 1 }, created: todayKey() };
+  const settings = defaultSettings();
+  return { v: 1, settings, days: {}, rules: [], woops: [], sessions: [], reminders: defaultReminders(settings), ui: { view: 'attack', open: {}, range: 14, pb: 1, remFired: {}, snoozes: [] }, created: todayKey() };
 }
 
 function migrate(s) {
   const d = defaultSettings();
   s.settings = Object.assign({}, d, s.settings || {});
   if (s.settings.appName === 'Attack Mode') s.settings.appName = 'Aware Mode'; // renamed in v1.0.6
-  for (const k of ['labels', 'placeholders', 'timer']) s.settings[k] = Object.assign({}, d[k], s.settings[k] || {});
+  for (const k of ['labels', 'placeholders', 'timer', 'remind']) s.settings[k] = Object.assign({}, d[k], s.settings[k] || {});
   const tabs = s.settings.tabs || [];
   s.settings.tabs = tabs.filter(t => TABS.some(x => x.id === t.id));
   TABS.filter(t => !s.settings.tabs.some(x => x.id === t.id)).forEach(t => {
@@ -107,6 +120,9 @@ function migrate(s) {
   });
   s.days = s.days || {}; s.rules = s.rules || []; s.woops = s.woops || []; s.sessions = s.sessions || [];
   s.ui = Object.assign({ view: 'attack', open: {}, range: 14 }, s.ui || {});
+  if (!Array.isArray(s.reminders)) s.reminders = defaultReminders(s.settings);
+  s.reminders.forEach(r => { r.days = Array.isArray(r.days) ? r.days : []; r.date = r.date || ''; r.go = r.go || ''; });
+  s.ui.remFired = s.ui.remFired || {}; s.ui.snoozes = Array.isArray(s.ui.snoozes) ? s.ui.snoozes : [];
   if (!s.ui.pb) { s.settings.style = 'paperbox'; s.ui.pb = 1; } // Paper Box became the default style
   for (const k in s.days) { const dd = s.days[k]; dd.tasks = dd.tasks || []; dd.factors = dd.factors || {}; dd.journal = dd.journal || {}; dd.rules = dd.rules || {}; }
   return s;
@@ -119,6 +135,7 @@ function load() {
 let S = load();
 let saveWarned = false;
 function save() {
+  if (typeof remSync === 'function') remSync();
   try { localStorage.setItem(LS_KEY, JSON.stringify(S)); }
   catch (e) { if (!saveWarned) { toast('Could not save. Export a backup from Settings.'); saveWarned = true; } }
 }
@@ -355,6 +372,7 @@ const PX = {
   insights: ['.........', '.......#.', '.......#.', '....#..#.', '....#..#.', '.#..#..#.', '.#..#..#.', '.#..#..#.', '#########'],
   history: ['.........', '##.######', '.........', '##.######', '.........', '##.######', '.........', '##.######', '.........'],
   settings: ['...#.#...', '.#.###.#.', '..#####..', '###...###', '.##...##.', '###...###', '..#####..', '.#.###.#.', '...#.#...'],
+  remind: ['....#....', '...###...', '..#...#..', '..#...#..', '..#...#..', '.#.....#.', '#########', '.........', '...###...'],
   flame: ['....#....', '...##....', '...###...', '..####.#.', '..######.', '.###..##.', '.##....#.', '.##....#.', '..######.'],
   play: ['..#......', '..##.....', '..###....', '..####...', '..#####..', '..####...', '..###....', '..##.....', '..#......'],
   pause: ['.........', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.........'],
@@ -372,6 +390,7 @@ const LINE = {
   insights: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
   history: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r=".8" fill="currentColor"/><circle cx="3.5" cy="12" r=".8" fill="currentColor"/><circle cx="3.5" cy="18" r=".8" fill="currentColor"/>',
   settings: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  remind: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   flame: '<path d="M12 22c3.9 0 7-2.8 7-6.8 0-4.7-4.4-6.6-5-12.2-3 2-5.6 5.7-5.6 9.3-1-.6-1.8-1.8-2-3.3C5 10.6 5 12.3 5 15.2 5 19.2 8.1 22 12 22z"/>',
   play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor"/>',
   pause: '<path d="M8 5v14M16 5v14" stroke-width="3"/>',
@@ -388,6 +407,7 @@ const CY = {
   insights: '<path d="M3 3v18h18M18 17V9M13 17V5M8 17v-3"/>',
   history: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5M12 7v5l4 2"/>',
   settings: '<path d="M20 7h-9M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
+  remind: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
   play: '<path d="M6 3l14 9-14 9z"/>', pause: '<path d="M7 4h3v16H7zM14 4h3v16h-3z"/>', skip: '<path d="M5 4l10 8-10 8zM19 5v14"/>',
   reset: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5"/>',
@@ -429,6 +449,7 @@ const MO = Object.assign({}, PB, {
   insights: '<path d="M4 20h16M7 16.5v-5M12 16.5V6.5M17 16.5v-8"/>',
   history: '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4.5V9H9M12 8v4.2l2.8 1.8"/>',
   settings: '<path d="M6 4v5M6 13v7M12 4v9M12 17v3M18 4v3M18 11v9"/><circle cx="6" cy="11" r="2"/><circle cx="12" cy="15" r="2"/><circle cx="18" cy="9" r="2"/>',
+  remind: '<path d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 5.5 2.5 7.5 2.5 7.5H4s2.5-2 2.5-7.5M10 20a2.2 2.2 0 0 0 4 0"/>',
   more: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
   flame: '<path d="M12 3c.6 3 4.5 5.2 4.5 9.6a4.5 4.5 0 0 1-9 0c0-2.2 1-3.5 2.2-4.6.1 1.7.9 2.8 2 3.2-.4-3 .1-5.6.3-8.2z"/>',
   x: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>', check: '<path d="M5 12.5l4.5 4.5L19 7"/>', plus: '<path d="M12 5v14M5 12h14"/>',
@@ -492,12 +513,17 @@ function levelUp(n) {
 
 /* ---------- nav ---------- */
 const navTabs = () => S.settings.tabs.filter(t => t.visible || t.id === 'settings');
+// a phone-width bottom bar holds 8 tabs; a 9th (Reminders) moves into Settings there and Settings stays lit while you are in it
+// (the Cyberpunk drawer reuses the same nav, so it lists everything while open)
+const barTabs = () => { const t = navTabs(); return (layout() === 'tabs' || layout() === 'cyber') && t.length > 8 && !matchMedia('(min-width:900px)').matches && !document.documentElement.classList.contains('menu-open') ? t.filter(x => x.id !== 'remind') : t; };
 function renderNav() {
   const v = S.ui.view;
   const term = layout() === 'term';
   if (layout() === 'paper' || layout() === 'mono') pbNav(v);
-  else $('#nav').innerHTML = navTabs().map((t, i) =>
-    `<a href="#${t.id}" class="${v === t.id ? 'on' : ''}" data-nav="${t.id}">${term ? `<span>${i + 1}:${esc(t.label.toLowerCase())}</span>` : `${px(t.id === 'attack' ? 'today' : t.id, 18)}<span>${esc(t.label)}</span>`}</a>`).join('');
+  else $('#nav').innerHTML = barTabs().map((t, i) =>
+    `<a href="#${t.id}" class="${v === t.id || (v === 'remind' && t.id === 'settings' && !barTabs().some(x => x.id === 'remind')) ? 'on' : ''}" data-nav="${t.id}">${term ? `<span>${i + 1}:${esc(t.label.toLowerCase())}</span>` : `${px(t.id === 'attack' ? 'today' : t.id, 18)}<span>${esc(t.label)}</span>`}</a>`).join('');
+  // strip navs (Terminal, Timeline, Deck, phone docks) scroll so the active tab is in view
+  { const nav = $('#nav'), on = nav.querySelector('a.on'); if (on && nav.scrollWidth > nav.clientWidth + 2) { const r = on.getBoundingClientRect(), nr = nav.getBoundingClientRect(); nav.scrollLeft += r.left + r.width / 2 - (nr.left + nr.width / 2); } }
   const name = S.settings.appName || 'Aware Mode';
   const parts = name.split(' ');
   const word = parts.length > 1 ? `${esc(parts.slice(0, -1).join(' '))} <b>${esc(parts.at(-1))}</b>` : `<b>${esc(name)}</b>`;
@@ -522,7 +548,7 @@ function renderNav() {
 }
 
 /* Paper Box: 5-cell bottom bar (first four tabs + More) and a Menu tile grid with every tab */
-const PB_EYEBROW = { attack: 'Attack today', plan: 'Build a tomorrow', focus: '30/10 system', woop: 'Clarity creates execution', manual: 'Treat yourself as a company', insights: 'Track · reflect · adjust', history: "Everything you've written", settings: 'Everything is yours to change' };
+const PB_EYEBROW = { attack: 'Attack today', plan: 'Build a tomorrow', focus: '30/10 system', woop: 'Clarity creates execution', manual: 'Treat yourself as a company', insights: 'Track · reflect · adjust', history: "Everything you've written", remind: 'Nudges at the right time', settings: 'Everything is yours to change' };
 const pbIcon = id => id === 'attack' ? 'today' : id;
 function pbNav(v) {
   const sm = simple(), tabs = navTabs(), bar = sm ? tabs.filter(t => SIMPLE_BAR.includes(t.id)) : tabs.length <= 5 ? tabs : tabs.slice(0, 4);
@@ -794,7 +820,8 @@ function nativeSchedule() {
   if (!LN) return;
   LN.cancel({ notifications: [{ id: 1 }] }).catch(() => { });
   if (!T.running) return;
-  const go = () => LN.schedule({ notifications: [{ id: 1, title: T.mode === 'break' ? 'Break over' : T.mode === 'starter' ? 'Starter done' : 'Work block done', body: T.mode === 'break' ? 'Back to work.' : T.mode === 'starter' ? 'Am I willing to continue?' : S.settings.timer.breakMsg, schedule: { at: new Date(T.endAt), allowWhileIdle: true } }] }).catch(() => { });
+  const x = { key: 'focus', kind: 'focus', go: 'focus', title: T.mode === 'break' ? 'Break over' : T.mode === 'starter' ? 'Starter done' : 'Work block done', body: T.mode === 'break' ? 'Back to work.' : T.mode === 'starter' ? 'Am I willing to continue?' : S.settings.timer.breakMsg };
+  const go = () => LN.schedule({ notifications: [Object.assign(nfNative(x, 1, { at: new Date(T.endAt), allowWhileIdle: true }), { channelId: undefined })] }).catch(() => { });
   if (lnAsked) return go();
   lnAsked = true;
   LN.requestPermissions().then(go, go);
@@ -852,14 +879,231 @@ function beep(n = 3) {
       o.start(t0); o.stop(t0 + 0.3);
     }
   } catch (e) { }
-  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  buzz([200, 100, 200]);
 }
+// focus block ended: the styled in-app card when you are elsewhere in the app, a system notification when the app is in the background
 function notify(title, body) {
-  if (!S.settings.timer.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const x = { key: 'focus', kind: 'focus', title, body, go: 'focus', at: new Date() };
+  if (document.visibilityState === 'visible') { if (S.ui.view !== 'focus') showNotif(x); return; }
+  if (S.settings.timer.notify && !NATIVE) sysNotify(x);
+}
+
+/* ---------- reminders + notifications ----------
+   S.reminders: { id, title, note, time 'HH:MM', days [0-6] (empty = once on date), date, on, go (tab to open) }
+   Task nudges come from the When time of today's tasks (settings.remind.taskLead minutes before).
+   While the app is open a card styled like the active style shows; the system notification shows when it is not.
+   Android app: everything is scheduled with the system, so it fires with the app closed.
+   PWA: browsers can only notify while the app is open or in the background; missed ones show when you come back. */
+const hm = s => { const m = /^(\d{1,2}):(\d{2})/.exec(s || ''); return m && +m[1] < 24 && +m[2] < 60 ? +m[1] * 60 + +m[2] : null; };
+const atTime = (k, min) => { const d = parseKey(k); d.setHours(0, min, 0, 0); return d; };
+const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const dowOrder = () => Array.from({ length: 7 }, (_, i) => (i + (+S.settings.weekStart || 0)) % 7);
+const remOccurs = (r, k) => r.on && hm(r.time) != null && (r.days.length ? r.days.includes(weekday(k)) : r.date === k);
+function remDays(r) {
+  if (!r.days.length) return r.date ? 'Once · ' + niceDate(r.date, { weekday: 'short', day: 'numeric', month: 'short' }) : 'Once · pick a date';
+  if (r.days.length === 7) return 'Every day';
+  if (r.days.length === 5 && [1, 2, 3, 4, 5].every(d => r.days.includes(d))) return 'Weekdays';
+  if (r.days.length === 2 && r.days.includes(0) && r.days.includes(6)) return 'Weekends';
+  return dowOrder().filter(d => r.days.includes(d)).map(d => DOW[d]).join(' ');
+}
+// everything that should ring on day k: reminders, task nudges and snoozes
+function dueOn(k) {
+  const out = [], lead = +S.settings.remind.taskLead;
+  S.reminders.forEach(r => { if (remOccurs(r, k)) out.push({ key: 'r:' + r.id, rid: r.id, kind: 'rem', at: atTime(k, hm(r.time)), title: r.title || 'Reminder', body: r.note || '', go: r.go }); });
+  if (lead >= 0) activeTasks(k).forEach(t => {
+    const m = hm(t.when); if (m == null || t.done || !t.what || t.carriedTo) return;
+    out.push({ key: 't:' + t.id, kind: 'task', at: atTime(k, m - lead), title: t.what, body: (lead ? `Starts at ${t.when}, in ${lead} min` : `Starts now, ${t.when}`) + (t.where ? ' · ' + t.where : ''), go: 'attack' });
+  });
+  S.ui.snoozes.forEach(z => { if (keyOf(new Date(z.at)) === k) out.push(Object.assign({}, z, { kind: 'snooze', at: new Date(z.at) })); });
+  return out;
+}
+// the next time a reminder rings, for the list
+function remNext(r) {
+  const now = Date.now(), m = hm(r.time);
+  if (!r.on || m == null) return null;
+  for (let i = 0; i < 8; i++) { const k = addDays(todayKey(), i), at = atTime(k, m); if (remOccurs(r, k) && at.getTime() > now) return at; }
+  return null;
+}
+function remWhen(d) {
+  if (!d) return '';
+  const k = keyOf(d), t = todayKey();
+  return (k === t ? 'Today' : k === addDays(t, 1) ? 'Tomorrow' : niceDate(k, { weekday: 'long' })) + ' ' + hhmm(d);
+}
+// a reminder you just made or moved does not count as missed for earlier today
+function remTouch(r) { const m = hm(r.time), at = m == null ? 0 : atTime(todayKey(), m).getTime(); if (at && at <= Date.now()) S.ui.remFired['r:' + r.id] = at; }
+function remNew(o) {
+  const r = Object.assign({ id: uid(), title: '', note: '', time: '09:00', days: [0, 1, 2, 3, 4, 5, 6], date: '', on: true, go: '' }, o);
+  S.reminders.push(r); remTouch(r); save(); return r;
+}
+
+/* how a notification looks in each style: accent colour, title wording, words on the card */
+const NF_STYLE = {
+  pixel: { up: 1 }, bw: { up: 1, color: '#0d0d0d' }, deck: { up: 1, color: '#ff3d00' },
+  terminal: { pre: '> ', low: 1, color: '#0b5d2a' }, cyberpunk: { pre: '// ', up: 1, color: '#00F0FF' },
+  studio: { color: '#6c5ce7' }, timeline: { color: '#ff6b35' }, paperbox: { color: '#F8704F' }, mono: { color: '#111111' },
+  gamified: { task: 'Mission' },
+};
+function nfLook(x) {
+  const id = S.settings.style, L = NF_STYLE[id] || {};
+  let title = x.title || 'Reminder';
+  if (L.up) title = title.toUpperCase(); if (L.low) title = title.toLowerCase();
+  const kind = x.missed ? 'Missed' : x.kind === 'task' ? (L.task || 'Up next') : x.kind === 'focus' ? 'Focus' : x.kind === 'snooze' ? 'Snoozed' : 'Reminder';
+  return { style: STYLES.some(s => s.id === id) ? id : 'paperbox', color: L.color || S.settings.accent || '#e4572e', title: (L.pre || '') + title, kind };
+}
+function nfBody(x) { return [x.kind === 'rem' || x.kind === 'snooze' || x.missed ? hhmm(x.at) : '', x.body].filter(Boolean).join(' · '); }
+
+// in-app card: one at a time, the rest wait in a queue
+const NFQ = [];
+function showNotif(x) { NFQ.push(x); if (NFQ.length === 1) drawNotif(); else drawNotif(true); }
+function drawNotif(countOnly) {
+  let el = $('#notif');
+  if (!el) { el = document.createElement('div'); el.id = 'notif'; el.setAttribute('role', 'alert'); document.body.append(el); }
+  const x = NFQ[0];
+  if (!x) { el.classList.remove('show'); clearTimeout(el._t); setTimeout(() => { if (!NFQ.length) el.innerHTML = ''; }, 260); return; }
+  if (countOnly) { const c = el.querySelector('.nf-more'); if (c) { c.textContent = '+' + (NFQ.length - 1); c.hidden = NFQ.length < 2; } else drawNotif(); return; }
+  const L = nfLook(x), tab = x.go && S.settings.tabs.find(t => t.id === x.go), snooze = +S.settings.remind.snooze || 10;
+  el.innerHTML = `<div class="nf" data-kind="${x.missed ? 'missed' : x.kind}">
+    <div class="nf-head"><span class="nf-ico">${px('remind', 16)}</span><span class="nf-kind">${L.kind}</span><span class="nf-time">${x.missed > 1 ? `${x.missed} missed` : hhmm(x.at || new Date())}</span><span class="nf-more" ${NFQ.length > 1 ? '' : 'hidden'}>+${NFQ.length - 1}</span>
+      <button class="nf-x" data-act="nfClose" aria-label="Dismiss">${px('x', 14) || '×'}</button></div>
+    <div class="nf-main"><b class="nf-title">${esc(x.title || 'Reminder')}</b>${x.body ? `<span class="nf-body">${esc(x.body)}</span>` : ''}</div>
+    <div class="nf-acts">${x.kind !== 'focus' ? `<button class="btn sm nf-snz" data-act="nfSnooze">${px('clock', 14)}Snooze ${snooze} min</button>` : ''}${tab && S.ui.view !== x.go ? `<button class="btn sm primary nf-go" data-act="nfGo">Open ${esc(tab.label)}${px('arrow', 14)}</button>` : `<button class="btn sm primary nf-ok" data-act="nfClose">${px('check', 14)}Got it</button>`}</div></div>`;
+  requestAnimationFrame(() => el.classList.add('show'));
+  clearTimeout(el._t);
+  if (x.kind === 'focus') el._t = setTimeout(() => ACT.nfClose(), 9000);
+}
+// swipe the card up to dismiss it
+{
+  let y0 = null;
+  document.addEventListener('touchstart', e => { y0 = e.target.closest?.('#notif .nf') ? e.touches[0].clientY : null; }, { passive: true });
+  document.addEventListener('touchmove', e => { if (y0 == null) return; const dy = Math.min(0, e.touches[0].clientY - y0); const c = $('#notif .nf'); if (c) c.style.transform = `translateY(${dy}px)`; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (y0 == null) return; const c = $('#notif .nf'), dy = (e.changedTouches[0]?.clientY || y0) - y0; y0 = null;
+    if (c) c.style.transform = ''; if (dy < -40) ACT.nfClose();
+  });
+}
+
+// a short sound in the character of the style
+const NF_TONE = { pixel: ['square', [523, 784]], bw: ['square', [523, 784]], terminal: ['square', [988, 988]], deck: ['square', [392, 523]], cyberpunk: ['sawtooth', [440, 880, 1320]], gamified: ['triangle', [523, 659, 784]], timeline: ['triangle', [659, 880]] };
+function chime() {
+  if (!S.settings.remind.sound) return;
   try {
-    if (navigator.serviceWorker?.controller) navigator.serviceWorker.ready.then(r => r.showNotification(title, { body, icon: 'icons/icon-192.png' }));
-    else new Notification(title, { body });
+    unlockAudio();
+    const [type, notes] = NF_TONE[S.settings.style] || ['sine', [660, 990]];
+    notes.forEach((f, i) => {
+      const o = actx.createOscillator(), g = actx.createGain(), t0 = actx.currentTime + i * 0.16;
+      o.type = type; o.frequency.value = f; o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(type === 'sine' ? 0.25 : 0.08, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+      o.start(t0); o.stop(t0 + 0.24);
+    });
   } catch (e) { }
+  buzz([120, 80, 120]);
+}
+// browsers refuse vibration until the first tap, so do not ask before then
+function buzz(p) { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(p); }
+document.addEventListener('pointerdown', unlockAudio, { once: true });
+
+// system notification from the web app (service worker when there is one)
+async function sysNotify(x) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const L = nfLook(x), opts = { body: nfBody(x), icon: `icons/notify/${L.style}.png`, badge: 'icons/notify/badge.png', tag: x.key, renotify: true, vibrate: [120, 80, 120], requireInteraction: x.kind === 'rem', data: { go: x.go || '' } };
+  try {
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.showNotification(L.title, opts); else new Notification(L.title, opts);
+  } catch (e) { }
+}
+navigator.serviceWorker?.addEventListener('message', e => { if (e.data && e.data.type === 'nf' && e.data.go) go(e.data.go); });
+
+function remFire(x) {
+  if (document.visibilityState === 'visible') { showNotif(x); chime(); }
+  else if (!NATIVE) sysNotify(x);
+}
+// checks every 15 s while the app runs; anything due in the last 5 minutes rings now
+function remTick() {
+  const now = Date.now(), fresh = [], missed = [];
+  let changed = false;
+  // tomorrow too: a nudge for a task just after midnight rings before midnight
+  dueOn(todayKey()).concat(dueOn(addDays(todayKey(), 1))).forEach(x => {
+    const at = x.at.getTime();
+    if (at > now || (S.ui.remFired[x.key] || 0) >= at) return;
+    S.ui.remFired[x.key] = at; changed = true;
+    if (now - at < 5 * 60e3) fresh.push(x); else if (x.kind !== 'task') missed.push(x);
+    if (x.kind === 'rem') { const r = S.reminders.find(y => y.id === x.rid); if (r && !r.days.length) r.on = false; }
+  });
+  const nz = S.ui.snoozes.filter(z => z.at > now);
+  if (nz.length !== S.ui.snoozes.length) { S.ui.snoozes = nz; changed = true; }
+  if (!changed) return;
+  // forget what rang more than two days ago, so the list does not grow forever
+  Object.keys(S.ui.remFired).forEach(k => { if (S.ui.remFired[k] < now - 2 * 864e5) delete S.ui.remFired[k]; });
+  save();
+  fresh.forEach(remFire);
+  // the Android app already showed missed ones as system notifications
+  if (missed.length && !NATIVE && S.settings.remind.missed) { const last = missed[missed.length - 1]; remFire(Object.assign({}, last, { missed: missed.length })); }
+  if (S.ui.view === 'remind' && !document.activeElement?.closest?.('#main')) render();
+}
+setInterval(remTick, 15000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { remTick(); remSync(); } });
+
+// permission state, the same words on web and in the Android app
+let permState = 'default';
+async function remPermCheck() {
+  const LN = lnPlugin();
+  try {
+    if (LN) { const p = await LN.checkPermissions(); permState = p.display === 'granted' ? 'granted' : p.display === 'denied' ? 'denied' : 'default'; }
+    else permState = 'Notification' in window ? Notification.permission : 'unsupported';
+  } catch (e) { permState = 'unsupported'; }
+  return permState;
+}
+async function remAsk() {
+  const LN = lnPlugin();
+  try {
+    if (LN) { const p = await LN.requestPermissions(); permState = p.display === 'granted' ? 'granted' : 'denied'; }
+    else if ('Notification' in window) permState = await Notification.requestPermission();
+  } catch (e) { }
+  remSync();
+  if (S.ui.view === 'remind') render();
+  return permState;
+}
+
+/* Android app: hand every reminder to the system so it rings with the app closed */
+const lnPlugin = () => NATIVE && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+function nfNative(x, id, schedule) {
+  const L = nfLook(x);
+  return { id, title: L.title, body: nfBody(x), schedule, channelId: 'reminders', smallIcon: 'ic_stat_aware', largeIcon: 'notify_' + L.style, iconColor: L.color, extra: { go: x.go || '', key: x.key } };
+}
+function nativeList() {
+  const out = [], now = Date.now();
+  let id = 100;
+  S.reminders.forEach(r => {
+    const m = hm(r.time); if (!r.on || m == null) return;
+    const x = { key: 'r:' + r.id, kind: 'rem', title: r.title || 'Reminder', body: r.note || '', go: r.go, at: atTime(todayKey(), m) };
+    const on = { hour: Math.floor(m / 60), minute: m % 60 };
+    if (!r.days.length) { const at = r.date && atTime(r.date, m); if (at && at.getTime() > now) out.push(nfNative(Object.assign(x, { at }), id++, { at, allowWhileIdle: true })); }
+    else if (r.days.length === 7) out.push(nfNative(x, id++, { on, allowWhileIdle: true }));
+    else r.days.forEach(d => out.push(nfNative(x, id++, { on: Object.assign({ weekday: d + 1 }, on), allowWhileIdle: true })));
+  });
+  [todayKey(), addDays(todayKey(), 1)].forEach(k => dueOn(k).filter(x => x.kind !== 'rem' && x.at.getTime() > now).forEach(x => out.push(nfNative(x, id++, { at: x.at, allowWhileIdle: true }))));
+  return out;
+}
+let remSyncT, remSig = '', lnReady = false;
+function remSync() { if (lnPlugin()) { clearTimeout(remSyncT); remSyncT = setTimeout(remSyncNow, 800); } }
+async function remSyncNow() {
+  const LN = lnPlugin(); if (!LN) return;
+  try {
+    if ((await remPermCheck()) !== 'granted') return;
+    if (!lnReady) {
+      lnReady = true;
+      await LN.createChannel({ id: 'reminders', name: 'Reminders', description: 'Your Aware Mode reminders and task nudges', importance: 4, visibility: 1, vibration: true }).catch(() => { });
+      LN.addListener('localNotificationActionPerformed', a => { const g = a.notification?.extra?.go; if (g) go(g); });
+      // the app is open: the styled card shows instead, so take the system one away
+      LN.addListener('localNotificationReceived', n => { if (+n.id >= 100 && document.visibilityState === 'visible') LN.removeDeliveredNotifications({ notifications: [n] }).catch(() => { }); });
+    }
+    const list = nativeList(), sig = JSON.stringify(list);
+    if (sig === remSig) return;
+    const old = ((await LN.getPending()).notifications || []).filter(n => +n.id >= 100);
+    if (old.length) await LN.cancel({ notifications: old.map(n => ({ id: +n.id })) });
+    if (list.length) await LN.schedule({ notifications: list });
+    remSig = sig;
+  } catch (e) { console.warn('reminders', e); }
 }
 
 V.focus = () => {
@@ -1128,6 +1372,8 @@ const check = (label, bind, val) => `<label class="row small"><input type="check
 V.settings = () => {
   const st = S.settings, tm = st.timer, mo = st.style === 'mono', P = {};
   let h = mo ? '' : `<div class="eyebrow">Everything is yours to change</div><h1 class="title"><u>Settings</u></h1>`;
+  { const rl = S.settings.tabs.find(t => t.id === 'remind'), n = S.reminders.filter(r => r.on).length, nx = S.reminders.map(remNext).filter(Boolean).sort((a, b) => a - b)[0];
+    h += `<a class="linkrow rem-link no-print" href="#remind" data-nav="remind"><span class="rem-pi">${px('remind', 18)}</span><span class="t"><b>${esc(rl ? rl.label : 'Reminders')}</b><span class="small muted">${n ? `${n} on${nx ? ' · next ' + esc(remWhen(nx)) : ''}` : 'Nudges at the right time, plus task reminders'}</span></span>${px('chev', 14)}</a>`; }
   P['s-style'] = sec('s-style', 'Style', `<div class="stylepick">${STYLES.map(s => `<button class="${styleId() === s.id ? 'on' : ''}" data-act="setStyle" data-v="${s.id}" aria-pressed="${styleId() === s.id}"><span class="sw">${s.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><span><b>${s.name}</b><br><span>${s.note}</span></span></button>`).join('')}</div>
     <p class="small muted">Only the look changes. All your data and features stay the same. Light/dark still follows the Theme setting below.${st.style === 'bw' ? ' Pixel B&W ignores the accent colour.' : ''}</p>`);
   P['s-general'] = sec('s-general', 'General', `<div class="grid g2">
@@ -1192,6 +1438,48 @@ V.settings = () => {
   // Simple styles: only the everyday sections until you ask for the rest
   if (simple() && !allSettings) return h + SIMPLE_SET.map(id => P[id]).join('') + `<button class="btn ${mo ? 'grey' : 'pill'} block" data-act="allSettings">${px('plus', 14)}Show all settings</button>`;
   return h + order.map(id => P[id]).join('');
+};
+
+/* ---------- Reminders ---------- */
+const openRem = new Set();
+const REM_LEADS = [[-1, 'Off'], [0, 'At the start time'], [5, '5 min before'], [10, '10 min before'], [15, '15 min before'], [30, '30 min before'], [60, '1 hour before']];
+function remRow(r) {
+  const open = openRem.has(r.id), p = `rem|${r.id}|`, nx = remNext(r), mo = isMono();
+  const tabs = S.settings.tabs.filter(t => t.id !== 'remind');
+  let h = `<div class="rem ${r.on ? 'is-on' : ''} ${open ? 'open' : ''}" data-rem="${r.id}">
+    <div class="rem-row"><button class="rem-hit" data-act="remOpen" data-id="${r.id}" aria-expanded="${open}">
+      <span class="rem-time">${esc(r.time || '--:--')}</span>
+      <span class="t"><b>${esc(r.title || 'Untitled reminder')}</b><span class="rem-sub">${esc(remDays(r))}${r.on && nx ? ` · next ${esc(remWhen(nx))}` : ''}</span></span>
+      ${px(open ? 'cu' : 'cd', 14) || `<span class="chev">${open ? '−' : '+'}</span>`}</button>
+      <label class="rem-sw" title="${r.on ? 'On' : 'Off'}"><input type="checkbox" data-bind="${p}on" data-rr ${r.on ? 'checked' : ''} aria-label="${esc(r.title || 'Reminder')} on or off"><span></span></label></div>`;
+  if (open) h += `<div class="rem-ed">
+      <div class="grid g2"><label class="f"><span>Reminder</span>${inp(p + 'title', r.title, 'placeholder="Plan tomorrow"')}</label><label class="f"><span>Time</span>${inp(p + 'time', r.time, 'type="time" data-rr')}</label></div>
+      <label class="f"><span>Note</span>${inp(p + 'note', r.note, 'placeholder="Shown under the title"')}</label>
+      <div class="f"><span class="lbl">Repeat</span><div class="row rem-rep"><div class="seg"><button type="button" class="${r.days.length ? 'on' : ''}" data-act="remMode" data-id="${r.id}" data-v="repeat">Repeat</button><button type="button" class="${r.days.length ? '' : 'on'}" data-act="remMode" data-id="${r.id}" data-v="once">Once</button></div>
+        ${r.days.length ? `<div class="pills">${dowOrder().map(d => `<button type="button" class="${r.days.includes(d) ? 'on' : ''}" data-act="remDay" data-id="${r.id}" data-v="${d}" aria-pressed="${r.days.includes(d)}">${DOW[d]}</button>`).join('')}</div>` : inp(p + 'date', r.date, `type="date" data-rr min="${todayKey()}" aria-label="Date"`)}</div></div>
+      <label class="f"><span>${mo ? 'Opens' : 'Opens this tab when you tap it'}</span><select data-bind="${p}go" data-rr><option value="">Nothing</option>${tabs.map(t => `<option value="${t.id}" ${r.go === t.id ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>
+      <div class="row rem-btns"><button class="btn sm" data-act="remTest" data-id="${r.id}">${px('eye', 14)}Preview</button><span style="flex:1"></span><button class="btn sm danger" data-act="remDel" data-id="${r.id}">${px('trash', 14)}Delete</button></div></div>`;
+  return h + '</div>';
+}
+V.remind = () => {
+  const rs = S.settings.remind, on = S.reminders.filter(r => r.on), mo = isMono();
+  const perm = permState, web = !NATIVE;
+  const st = perm === 'granted' ? ['ok', 'Notifications are on', web ? 'They show while Aware Mode is open or in the background. Install the Android app to get them with the app closed.' : 'Reminders ring even when the app is closed.']
+    : perm === 'denied' ? ['bad', 'Notifications are blocked', web ? 'Allow them in the browser site settings. Reminders still show inside the app.' : 'Allow them in Android Settings → Apps → Aware Mode → Notifications.']
+    : perm === 'unsupported' ? ['bad', 'This browser has no notifications', 'Reminders still show inside the app while it is open.']
+    : ['warn', 'Notifications are off', 'Turn them on so reminders reach you outside the app.'];
+  const next = S.reminders.map(r => [r, remNext(r)]).filter(x => x[1]).sort((a, b) => a[1] - b[1])[0];
+  let h = `<div class="eyebrow">Nudges at the right time</div><h1 class="title"><u>Reminders</u></h1>`;
+  h += `<div class="card rem-perm" data-perm="${st[0]}"><div class="rem-ph"><span class="rem-pi">${px('remind', 20)}</span><span class="t"><b>${st[1]}</b><span class="small muted">${st[2]}</span></span></div>
+    <div class="row rem-pb">${perm === 'default' || (perm === 'denied' && NATIVE) ? `<button class="btn sm primary" data-act="remPerm">${px('remind', 14)}Turn on</button>` : ''}<button class="btn sm" data-act="remTest">${px('eye', 14)}Send a test</button>
+    <span class="rem-cnt">${on.length} on${next ? ` · next ${esc(remWhen(next[1]))}` : ''}</span></div></div>`;
+  h += `<div class="rems">${S.reminders.length ? S.reminders.map(remRow).join('') : `<div class="empty-row">No reminders yet.</div>`}</div>`;
+  h += `<button class="btn ${mo ? 'grey' : 'primary'} block rem-add no-print" data-act="remAdd">${px('plus', 16)}New reminder</button>`;
+  h += sec('r-tasks', 'Task reminders', `<label class="f"><span>Before each task with a time</span><select data-bind="set|remind.taskLead" data-num data-rr>${REM_LEADS.map(([v, l]) => `<option value="${v}" ${+rs.taskLead === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    <p class="small muted">Uses the ${esc(S.settings.labels.when)} time of today's tasks. Finished tasks stay quiet.</p>`);
+  h += sec('r-opts', 'Reminder options', `<div class="grid g2">${field('Snooze minutes', 'set|remind.snooze', rs.snooze, 'type="number" min="1" max="240"')}</div>
+    <div class="stack" style="margin-top:10px">${check(mo ? 'Sound + vibration' : 'Sound + vibration in the app', 'set|remind.sound', rs.sound)}${NATIVE ? '' : check(mo ? 'Show missed reminders' : 'Show reminders I missed while the app was closed', 'set|remind.missed', rs.missed)}</div>`);
+  return h;
 };
 
 /* ---------- path helpers ---------- */
@@ -1886,10 +2174,10 @@ LV.mono = {
   },
 };
 
-const CMD_HELP = 'today | tomorrow | focus | woop | manual | insights | history | settings | 1-8 | add <task> | done <n> | half <n> | undo <n> | start | pause | reset | style <name> | help';
+const CMD_HELP = 'today | tomorrow | focus | woop | manual | insights | history | reminders | settings | 1-9 | remind <hh:mm> <text> | add <task> | done <n> | half <n> | undo <n> | start | pause | reset | style <name> | help';
 function runCmd(raw) {
   const [c0, ...rest] = raw.trim().split(/\s+/), c = (c0 || '').toLowerCase(), arg = rest.join(' ');
-  const views = { today: 'attack', t: 'attack', tomorrow: 'plan', plan: 'plan', focus: 'focus', f: 'focus', woop: 'woop', manual: 'manual', insights: 'insights', history: 'history', settings: 'settings' };
+  const views = { today: 'attack', t: 'attack', tomorrow: 'plan', plan: 'plan', focus: 'focus', f: 'focus', woop: 'woop', manual: 'manual', insights: 'insights', history: 'history', reminders: 'remind', settings: 'settings' };
   const tabs = navTabs();
   if (!c) return '';
   if (views[c]) { go(views[c]); return 'opened ' + c; }
@@ -1909,6 +2197,14 @@ function runCmd(raw) {
     else { t.done = false; t.half = false; }
     save(); render();
     return `${checkState(t).toLowerCase()}: ${t.what || 'untitled'}`;
+  }
+  if (c === 'remind') {
+    const m = /^(\d{1,2}):(\d{2})\s*(.*)$/.exec(arg);
+    if (!arg) { go('remind'); return 'opened reminders'; }
+    if (!m || +m[1] > 23 || +m[2] > 59) return 'usage: remind <hh:mm> <text>';
+    const r = remNew({ time: pad(+m[1]) + ':' + m[2], title: m[3] || 'Reminder', on: true });
+    remAsk(); render();
+    return `reminder ${r.time} every day: ${r.title}`;
   }
   if (c === 'start') { ACT.startFocus(); if (!T.running) ACT.tToggle(); return 'timer running'; }
   if (c === 'pause') { if (T.running) ACT.tToggle(); return 'timer paused'; }
@@ -1991,6 +2287,14 @@ function bindSet(el) {
     case 'rule': { const r = S.rules.find(x => x.id === parts[1]); if (r) r[parts[2]] = v; break; }
     case 'woop': { const w = S.woops.find(x => x.id === parts[1]); if (w) w[parts[2]] = v; break; }
     case 'tab': { const t = S.settings.tabs.find(x => x.id === parts[1]); if (t) t[parts[2]] = v; renderNav(); break; }
+    case 'rem': {
+      const r = S.reminders.find(x => x.id === parts[1]); if (!r) return;
+      r[parts[2]] = v;
+      if (parts[2] === 'on' && v) { remTouch(r); if (permState === 'default') remAsk(); }
+      if (parts[2] === 'time' || parts[2] === 'date') remTouch(r);
+      if (parts[2] === 'title') { const b = $(`.rem[data-rem="${r.id}"] .rem-hit b`); if (b) b.textContent = v || 'Untitled reminder'; }
+      break;
+    }
   }
   save();
 }
@@ -2045,7 +2349,7 @@ const ACT = {
     save(); render(); toast((t.half ? 'Half done: ' : 'Not half: ') + (t.what || 'task'));
   },
   deckSkip() { deckSkip++; render(); },
-  menu(el, e) { e?.preventDefault(); document.documentElement.classList.toggle('menu-open'); },
+  menu(el, e) { e?.preventDefault(); document.documentElement.classList.toggle('menu-open'); renderNav(); },
   setGrade(el) { const t = findTask(el.dataset.k, el.dataset.id); if (!t) return; t.grade = el.dataset.v; save(); render(); },
   pickOpen(el) { const i = el.querySelector('input'); try { i.showPicker(); } catch (e) { i.focus(); } },
   setval(el) {
@@ -2146,6 +2450,26 @@ const ACT = {
   setStyle(el) { const s = STYLES.find(x => x.id === el.dataset.v); S.settings.style = s.base || s.id; S.settings.simple = !!s.simple; allSettings = false; save(); applyTheme(); render(); toast('Style: ' + s.name); },
   moreTask(el) { moreTask.add(el.dataset.id); render(); },
   allSettings() { allSettings = true; render(); },
+  remOpen(el) { const id = el.dataset.id; if (openRem.has(id)) openRem.delete(id); else { openRem.clear(); openRem.add(id); } render(); },
+  remAdd() { const r = remNew({ title: '', time: hhmm(new Date(Math.ceil((Date.now() + 30 * 60e3) / 9e5) * 9e5)) }); openRem.clear(); openRem.add(r.id); if (permState === 'default') remAsk(); render(); setTimeout(() => $(`[data-bind="rem|${r.id}|title"]`)?.focus(), 30); },
+  async remDel(el) { const r = S.reminders.find(x => x.id === el.dataset.id); if (!r || !(await confirmBox(`Delete the reminder “${esc(r.title || 'Untitled')}”?`, 'Delete', 'danger'))) return; S.reminders = S.reminders.filter(x => x !== r); delete S.ui.remFired['r:' + r.id]; save(); render(); },
+  remMode(el) { const r = S.reminders.find(x => x.id === el.dataset.id); if (!r) return; if (el.dataset.v === 'once') { r.days = []; r.date = r.date && r.date >= todayKey() ? r.date : (hm(r.time) != null && atTime(todayKey(), hm(r.time)) > new Date() ? todayKey() : addDays(todayKey(), 1)); } else if (!r.days.length) r.days = [0, 1, 2, 3, 4, 5, 6]; remTouch(r); save(); render(); },
+  remDay(el) { const r = S.reminders.find(x => x.id === el.dataset.id), d = +el.dataset.v; if (!r) return; const i = r.days.indexOf(d); if (i >= 0) { if (r.days.length > 1) r.days.splice(i, 1); else return toast('Pick at least one day, or choose Once'); } else r.days.push(d); r.days.sort(); remTouch(r); save(); render(); },
+  async remPerm() { const p = await remAsk(); toast(p === 'granted' ? 'Notifications are on' : 'Notifications are still off'); },
+  remTest(el) {
+    const r = el.dataset.id && S.reminders.find(x => x.id === el.dataset.id);
+    const x = r ? { key: 'test:' + r.id, kind: 'rem', title: r.title || 'Reminder', body: r.note, go: r.go, at: new Date() } : { key: 'test', kind: 'rem', title: 'This is how reminders look', body: 'Each style draws its own.', go: 'attack', at: new Date() };
+    showNotif(x); chime();
+    if (permState === 'granted') { if (NATIVE) lnPlugin().schedule({ notifications: [nfNative(x, 99, { at: new Date(Date.now() + 1500), allowWhileIdle: true })] }).catch(() => { }); else sysNotify(Object.assign({}, x, { key: 'test-sys' })); }
+  },
+  nfClose() { NFQ.shift(); drawNotif(); },
+  nfGo() { const x = NFQ[0]; NFQ.shift(); drawNotif(); if (x && x.go) { document.documentElement.classList.remove('menu-open'); go(x.go); } },
+  nfSnooze() {
+    const x = NFQ.shift(); drawNotif(); if (!x) return;
+    const min = Math.max(1, +S.settings.remind.snooze || 10), at = Date.now() + min * 60e3;
+    S.ui.snoozes.push({ key: 'z:' + uid(), title: x.title, body: x.body || '', go: x.go || '', at }); save();
+    toast(`Snoozed until ${hhmm(new Date(at))}`);
+  },
   resetAccent() { S.settings.accent = defaultSettings().accent; applyTheme(); save(); render(); },
   toggleRest(el) { const v = +el.dataset.v, a = S.settings.restDays; const i = a.indexOf(v); if (i >= 0) a.splice(i, 1); else a.push(v); save(); render(); },
   leAdd(el) { getPath(S.settings, el.dataset.path).push(''); save(); render(); const r = document.querySelectorAll(`[data-bind^="list|${el.dataset.path}|"]`); r[r.length - 1]?.focus(); },
@@ -2196,7 +2520,7 @@ document.addEventListener('click', e => {
   if (a && ACT[a.dataset.act]) { if (DAY_ACTS.includes(a.dataset.act) && pastLocked(actDay(a))) return; ACT[a.dataset.act](a, e); return; }
   const n = e.target.closest('[data-nav]');
   if (n) { e.preventDefault(); document.documentElement.classList.remove('menu-open'); go(n.dataset.nav); }
-  else if (e.target.id === 'scrim') document.documentElement.classList.remove('menu-open');
+  else if (e.target.id === 'scrim') { document.documentElement.classList.remove('menu-open'); renderNav(); }
 });
 
 /* ---------- boot + loading screen ---------- */
@@ -2220,6 +2544,7 @@ function boot() {
   setP(0); setTimeout(run, 120);
 }
 boot();
+remPermCheck().then(() => { remTick(); remSync(); if (S.ui.view === 'remind') render(); });
 // re-render when the day rolls over or the app comes back into view
 let lastDay = todayKey();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && todayKey() !== lastDay) { lastDay = todayKey(); if (S.ui.view !== 'focus') render(); } });

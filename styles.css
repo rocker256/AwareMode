@@ -2613,3 +2613,225 @@ ul.timeline::before{content:"";position:absolute;left:62px;top:6px;bottom:6px;wi
 :root[data-style="mono"] .mo-next b{min-width:0;overflow:hidden;text-overflow:ellipsis}
 /* Cyberpunk style picker: long names (Paper Box Simple) wrap instead of running into the next tile */
 :root[data-style="cyberpunk"] .stylepick b{white-space:normal;line-height:1.1;display:block}
+
+/* ===================== REMINDERS + NOTIFICATIONS (all styles) =====================
+   Reminders screen (#main[data-view="remind"]) and the in-app notification card (#notif .nf).
+   The base below is the Pixel look; every other style restyles the card in its own language. */
+.rem-perm .rem-ph{display:flex;gap:12px;align-items:flex-start}
+.rem-perm .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rem-perm .t b{font-weight:700}
+.rem-pi{width:38px;height:38px;flex:none;display:grid;place-items:center;border:var(--px) solid var(--line-strong);color:var(--accent);border-radius:var(--r-sm,0)}
+.rem-perm[data-perm="ok"] .rem-pi{background:var(--good);border-color:var(--good);color:#fff}
+.rem-perm[data-perm="bad"] .rem-pi{color:var(--bad);border-color:var(--bad)}
+.rem-pb{margin-top:12px;gap:8px}
+.rem-pb .btn{gap:6px}
+.rem-cnt{margin-left:auto;font-size:.74rem;color:var(--muted);white-space:nowrap}
+.rems{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:14px 0}
+.rem{background:var(--surface);border:var(--px) solid var(--line);border-radius:var(--r,0)}
+.rem.is-on{border-color:var(--line-strong)}
+.rem-row{display:flex;align-items:center;gap:4px;padding-right:12px}
+.rem-hit{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:12px;border:0;background:transparent;text-align:left;cursor:pointer;color:inherit;font:inherit}
+.rem-time{font-family:var(--pixel);font-size:1.3rem;line-height:1;font-variant-numeric:tabular-nums;min-width:4.6ch}
+.rem:not(.is-on) .rem-time,.rem:not(.is-on) .rem-hit .t b{color:var(--muted)}
+.rem-hit .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rem-hit .t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rem-sub{font-size:.74rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rem-hit>.pxi,.rem-hit>.chev{color:var(--muted);flex:none}
+.rem-sw{position:relative;display:inline-flex;flex:none;cursor:pointer;padding:6px 0}
+.rem-sw input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer;z-index:1}
+.rem-sw span{position:relative;display:block;width:42px;height:24px;border:var(--px) solid var(--line-strong);border-radius:999px;background:var(--surface2);transition:background .15s}
+.rem-sw span::after{content:"";position:absolute;top:50%;left:3px;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:var(--muted);transition:transform .15s}
+.rem-sw input:checked+span{background:var(--accent);border-color:var(--accent)}
+.rem-sw input:checked+span::after{transform:translateX(18px);background:var(--accent-ink)}
+.rem-sw input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.rem-ed{display:grid;gap:12px;padding:12px 12px 14px;border-top:var(--px) dashed var(--line)}
+.rem-ed>.f{display:flex;flex-direction:column;gap:5px}
+.rem-rep{gap:8px}
+.rem-rep input[type=date]{width:auto;flex:1 1 150px}
+.rem-btns .btn{gap:6px}
+.rem-add{margin:2px 0 14px}
+/* the seven day pills share one row in every style */
+#main[data-view="remind"] .rem-rep .pills{flex:1 1 230px;display:flex;flex-wrap:nowrap;gap:4px}
+#main[data-view="remind"] .rem-rep .pills button{flex:1 1 0;min-width:0;padding-left:0;padding-right:0;text-align:center}
+
+#notif{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 10px);z-index:115;display:flex;justify-content:center;padding:0 12px;pointer-events:none}
+#notif:empty{display:none}
+#notif .nf{position:relative;pointer-events:auto;width:100%;max-width:440px;background:var(--surface);color:var(--ink);border:var(--px) solid var(--line-strong);box-shadow:4px 4px 0 var(--line-strong);padding:12px 14px 14px;transform:translateY(calc(-100% - 40px));opacity:0;transition:transform .3s cubic-bezier(.2,.9,.3,1.15),opacity .2s;touch-action:pan-x}
+#notif.show .nf{transform:none;opacity:1}
+.nf-head{display:flex;align-items:center;gap:8px;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);min-height:26px}
+.nf-ico{width:26px;height:26px;flex:none;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink)}
+.nf-kind{font-weight:600;color:var(--accent)}
+.nf-time{font-variant-numeric:tabular-nums}
+.nf-more{padding:0 6px;border:var(--px) solid var(--line);letter-spacing:0}
+.nf-x{margin:-4px -6px -4px auto;border:0;background:transparent;color:var(--muted);cursor:pointer;width:32px;height:32px;display:grid;place-items:center;font-size:1.1rem;line-height:1}
+.nf-main{display:flex;flex-direction:column;gap:3px;margin:8px 0 12px}
+.nf-title{font-family:var(--pixel);font-weight:700;font-size:1.05rem;line-height:1.2;text-transform:uppercase;overflow-wrap:anywhere}
+.nf-body{font-size:.84rem;color:var(--muted);overflow-wrap:anywhere}
+.nf-acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.nf-acts .btn{gap:6px}
+.nf[data-kind="missed"] .nf-kind{color:var(--bad)}
+@media (prefers-reduced-motion:reduce){#notif .nf{transition:opacity .2s}}
+@media print{#notif{display:none!important}}
+
+/* Pixel B&W: notched card, no shadow */
+:root[data-style="bw"] #notif .nf{clip-path:var(--notch);box-shadow:none;border-color:var(--ink);border-width:2px}
+:root[data-style="bw"] .nf-ico{background:var(--ink);color:var(--bg)}
+:root[data-style="bw"] .nf-kind{color:var(--ink)}
+:root[data-style="bw"] .rem.is-on{border-color:var(--ink)}
+:root[data-style="bw"] .rem{clip-path:var(--notch)}
+
+/* Refresh: soft rounded sheet, heavy italic title */
+:root[data-style="refresh"] #notif .nf{border-radius:18px;border:1px solid var(--line);box-shadow:0 18px 44px -14px rgba(21,20,18,.38)}
+:root[data-style="refresh"] .nf-ico{border-radius:9px}
+:root[data-style="refresh"] .nf-head{font-weight:600;letter-spacing:.14em}
+:root[data-style="refresh"] .nf-title{font-weight:900;font-style:italic;letter-spacing:-.01em;font-size:1.2rem}
+:root[data-style="refresh"] .nf-more{border-radius:99px}
+
+/* Simplified: flat, hairline, one accent */
+:root[data-style="simplified"] #notif .nf{border-radius:14px;border:1px solid var(--line);box-shadow:0 12px 28px -16px rgba(40,30,10,.32)}
+:root[data-style="simplified"] .nf-ico{background:transparent;color:var(--accent);width:20px}
+:root[data-style="simplified"] .nf-kind{color:var(--ink2)}
+:root[data-style="simplified"] .nf-title{text-transform:none;font-weight:600;font-size:1.05rem}
+:root[data-style="simplified"] .nf-more{border-radius:99px}
+:root[data-style="simplified"] .rem.is-on{border-color:var(--line)}
+
+/* Gamified: mission card with the accent glow */
+:root[data-style="gamified"] #notif .nf{border:0;border-radius:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 24%,transparent),transparent 70%),var(--bg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 50%,transparent),0 22px 44px -20px rgba(0,0,0,.55)}
+:root[data-style="gamified"] .nf-ico{border-radius:50%}
+:root[data-style="gamified"] .nf-head{font-weight:700;letter-spacing:.1em}
+:root[data-style="gamified"] .nf-title{text-transform:none;font-size:1.25rem;letter-spacing:-.01em}
+:root[data-style="gamified"] .nf-more{border-radius:99px;border-color:var(--line)}
+:root[data-style="gamified"] .rem{border:0;background:var(--surface);border-radius:20px}
+:root[data-style="gamified"] .rem.is-on{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent)}
+:root[data-style="gamified"] .rem-sw span{border-color:var(--line)}
+
+/* Studio: white floating card, lavender chip, purple accent */
+:root[data-style="studio"] #notif .nf{border:0;border-radius:22px;background:var(--surface);box-shadow:0 1px 2px rgba(35,33,58,.06),0 24px 50px -18px rgba(35,33,58,.42)}
+:root[data-style="studio"] .nf-ico{border-radius:12px;background:var(--surface2);color:var(--accent);width:30px;height:30px}
+:root[data-style="studio"] .nf-head{font-weight:600;letter-spacing:.1em}
+:root[data-style="studio"] .nf-title{text-transform:none;font-size:1.15rem;letter-spacing:-.01em}
+:root[data-style="studio"] .nf-more{border-radius:99px;background:var(--surface2);border:0;color:var(--accent)}
+:root[data-style="studio"] .rem{border:0;box-shadow:var(--soft);border-radius:18px}
+
+/* Terminal: a line of output, dashed box, lower case */
+:root[data-style="terminal"] #notif .nf{background:var(--bg);border:1px dashed var(--line-strong)}
+:root[data-style="terminal"] .nf-ico{display:none}
+:root[data-style="terminal"] .nf-head{text-transform:lowercase;letter-spacing:0;font-size:.78rem}
+:root[data-style="terminal"] .nf-kind::before{content:"> notify --"}
+:root[data-style="terminal"] .nf-time::before{content:"["}
+:root[data-style="terminal"] .nf-time::after{content:"]"}
+:root[data-style="terminal"] .nf-title{text-transform:lowercase;font-weight:600;font-size:1rem}
+:root[data-style="terminal"] .nf-title::before{content:"$ ";color:var(--muted)}
+:root[data-style="terminal"] .nf-more{border-style:dashed}
+:root[data-style="terminal"] .rem{border-style:dashed;background:transparent}
+:root[data-style="terminal"] .rem-sw span{border-style:dashed}
+
+/* Timeline: a colour block on top, heavy title */
+:root[data-style="timeline"] #notif .nf{border:2px solid var(--ink);border-radius:18px;box-shadow:0 18px 40px -18px rgba(20,20,20,.45);padding:0;overflow:hidden}
+:root[data-style="timeline"] .nf-head{background:var(--accent);color:#fff;padding:8px 10px 8px 12px;font-weight:700;letter-spacing:.08em}
+:root[data-style="timeline"] .nf-ico{background:#fff;color:var(--accent);border-radius:50%}
+:root[data-style="timeline"] .nf-kind{color:#fff}
+:root[data-style="timeline"] .nf-x{color:#fff;margin:-4px -2px -4px auto}
+:root[data-style="timeline"] .nf-more{border-color:rgba(255,255,255,.6);border-radius:99px}
+:root[data-style="timeline"] .nf-main{padding:12px 14px 0;margin:0 0 12px}
+:root[data-style="timeline"] .nf-title{text-transform:none;font-weight:900;font-size:1.4rem;letter-spacing:-.03em;line-height:1.05}
+:root[data-style="timeline"] .nf-acts{padding:0 14px 14px}
+:root[data-style="timeline"] .rem{border:2px solid var(--line);border-radius:16px}
+:root[data-style="timeline"] .rem.is-on{border-color:var(--ink)}
+:root[data-style="timeline"] .rem-time{font-weight:900;letter-spacing:-.03em}
+
+/* Deck: yellow-page brutalism, thick outline, hard shadow */
+:root[data-style="deck"] #notif .nf{border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
+:root[data-style="deck"] .nf-ico{border:3px solid var(--ink);width:30px;height:30px}
+:root[data-style="deck"] .nf-kind{background:var(--ink);color:var(--bg);padding:2px 7px;font-weight:800}
+:root[data-style="deck"] .nf-title{font-weight:900;font-size:1.45rem;letter-spacing:-.03em;line-height:1}
+:root[data-style="deck"] .nf-more{border:3px solid var(--ink);color:var(--ink);font-weight:800}
+:root[data-style="deck"] .rem{border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)}
+:root[data-style="deck"] .rem:not(.is-on){box-shadow:none}
+:root[data-style="deck"] .rem-time{font-weight:900}
+:root[data-style="deck"] .rem-sw span{border-width:3px}
+
+/* Cyberpunk: chamfered HUD panel, cyan hairline glow, Orbitron title */
+:root[data-style="cyberpunk"] #notif .nf{isolation:isolate;background:transparent;border:0;box-shadow:none;filter:drop-shadow(0 0 10px rgba(0,240,255,.3))}
+:root[data-style="cyberpunk"] #notif .nf::before{content:"";position:absolute;inset:0;background:var(--cy);clip-path:var(--c10);z-index:-2}
+:root[data-style="cyberpunk"] #notif .nf::after{content:"";position:absolute;inset:1px;background:var(--surface);clip-path:var(--c10);z-index:-1}
+:root[data-style="cyberpunk"] .nf-head{font:400 var(--t3)/1.2 var(--mono);letter-spacing:.14em}
+:root[data-style="cyberpunk"] .nf-ico{background:var(--mg);color:var(--void);clip-path:var(--c4);width:24px;height:24px}
+:root[data-style="cyberpunk"] .nf-kind{color:var(--cy)}
+:root[data-style="cyberpunk"] .nf-kind::before{content:"// incoming "}
+:root[data-style="cyberpunk"] .nf-title{font:900 1rem/1.15 var(--disp);letter-spacing:.05em;text-shadow:-1px 0 rgba(0,240,255,.8),1px 0 rgba(255,43,214,.8)}
+:root[data-style="cyberpunk"] .nf-body{font:400 var(--t2) var(--mono)}
+:root[data-style="cyberpunk"] .nf-more{border:1px solid var(--mg);color:var(--mg)}
+:root[data-style="cyberpunk"] .rem{position:relative;isolation:isolate;background:transparent;border:0}
+:root[data-style="cyberpunk"] .rem::before{content:"";position:absolute;inset:0;background:var(--line);clip-path:var(--c10);z-index:-2}
+:root[data-style="cyberpunk"] .rem::after{content:"";position:absolute;inset:1px;background:var(--surface);clip-path:var(--c10);z-index:-1}
+:root[data-style="cyberpunk"] .rem.is-on::before{background:color-mix(in srgb,var(--cy) 55%,var(--line))}
+:root[data-style="cyberpunk"] .rem-time{font:600 1.1rem var(--mono)}
+:root[data-style="cyberpunk"] .rem.is-on .rem-time{color:var(--cy);text-shadow:0 0 8px rgba(0,240,255,.5)}
+:root[data-style="cyberpunk"] .rem-hit .t b{font:600 var(--t1) var(--ui)}
+:root[data-style="cyberpunk"] .rem-sub{font:400 var(--t3) var(--mono);letter-spacing:.06em}
+:root[data-style="cyberpunk"] .rem-ed{border-top:1px solid var(--line)}
+:root[data-style="cyberpunk"] .rem-sw span{width:38px;height:20px;border:1px solid var(--line);background:var(--surface2)}
+:root[data-style="cyberpunk"] .rem-sw span::after{width:12px;height:12px;margin-top:-6px}
+:root[data-style="cyberpunk"] .rem-sw input:checked+span{background:var(--cy-deep);border-color:var(--cy)}
+:root[data-style="cyberpunk"] .rem-sw input:checked+span::after{transform:translateX(18px);background:var(--cy);box-shadow:0 0 6px var(--cy)}
+:root[data-style="cyberpunk"] .rem-pi{clip-path:var(--c6);border-color:var(--line)}
+
+/* Paper Box: white box, 2px outline, hard shadow, coral ticker strip on top */
+:root[data-style="paperbox"] #notif .nf{background:var(--surface);border:2px solid var(--o);border-radius:14px;box-shadow:5px 5px 0 var(--sh);padding:0;overflow:hidden}
+:root[data-style="paperbox"] .nf-head{background:var(--accent);color:#141414;border-bottom:2px solid var(--o);padding:6px 8px 6px 10px;font:700 10.5px/1.2 var(--mo);letter-spacing:.08em}
+:root[data-style="paperbox"] .nf-ico{background:#fff;color:#141414;border:2px solid #141414;border-radius:50%;width:26px;height:26px}
+:root[data-style="paperbox"] .nf-kind{color:#141414}
+:root[data-style="paperbox"] .nf-x{color:#141414}
+:root[data-style="paperbox"] .nf-more{border:2px solid #141414;border-radius:99px;background:#fff}
+:root[data-style="paperbox"] .nf-main{padding:12px 14px 0;margin:0 0 12px}
+:root[data-style="paperbox"] .nf-title{font:700 19px/1.15 var(--gr);text-transform:none;letter-spacing:-.02em}
+:root[data-style="paperbox"] .nf-body{font:500 13px var(--gr)}
+:root[data-style="paperbox"] .nf-acts{padding:0 14px 14px}
+:root[data-style="paperbox"] .rem{border:2px solid var(--o);border-radius:12px;box-shadow:3px 3px 0 var(--sh)}
+:root[data-style="paperbox"] .rem:not(.is-on){box-shadow:none;border-color:var(--line)}
+:root[data-style="paperbox"] .rem-time{font:700 18px var(--mo)}
+:root[data-style="paperbox"] .rem-hit .t b{font:700 14px var(--gr)}
+:root[data-style="paperbox"] .rem-sub{font:700 10px var(--mo);letter-spacing:.02em;text-transform:uppercase}
+:root[data-style="paperbox"] .rem-ed{border-top:2px dashed var(--line)}
+:root[data-style="paperbox"] .rem-sw span{width:38px;height:22px;border:2px solid var(--o);background:var(--surface)}
+:root[data-style="paperbox"] .rem-sw span::after{left:2px;width:12px;height:12px;margin-top:-6px;background:var(--ink)}
+:root[data-style="paperbox"] .rem-sw input:checked+span{background:var(--fill);border-color:var(--o)}
+:root[data-style="paperbox"] .rem-sw input:checked+span::after{transform:translateX(16px);background:var(--surface)}
+:root[data-style="paperbox"] .rem-pi{border:2px solid var(--o);border-radius:50%;background:var(--accent);color:#141414}
+:root[data-style="paperbox"] .rem-perm[data-perm="ok"] .rem-pi{background:var(--good);color:#141414}
+:root[data-style="paperbox"] .rem-perm[data-perm="bad"] .rem-pi{background:var(--surface);color:var(--bad)}
+:root[data-style="paperbox"] .rem-cnt{font:700 10px var(--mo);text-transform:uppercase;letter-spacing:.04em}
+
+/* B&W: white card, solid ink outline, black pill title, no shadow */
+:root[data-style="mono"] #notif .nf{background:var(--bg);border:1.5px solid var(--ink);border-radius:20px;box-shadow:none;padding:12px 14px 14px}
+:root[data-style="mono"] .nf-head{font:700 9.5px var(--mu);letter-spacing:.06em}
+:root[data-style="mono"] .nf-ico{background:none;color:var(--ink);border:var(--dot);border-radius:50%;width:28px;height:28px}
+:root[data-style="mono"] .nf-kind{color:var(--ink)}
+:root[data-style="mono"] .nf-more{border:var(--dot);border-radius:99px;color:var(--ink)}
+:root[data-style="mono"] .nf-title{align-self:flex-start;background:var(--ink);color:var(--on);border-radius:999px;padding:6px 14px;font:700 14px/1.2 var(--mu);text-transform:none}
+:root[data-style="mono"] .nf-body{font:400 13px var(--mu);margin-top:4px}
+:root[data-style="mono"] .rem{border:var(--dot);border-radius:16px}
+:root[data-style="mono"] .rem.is-on{border:1.5px solid var(--ink)}
+:root[data-style="mono"] .rem-time{font:700 18px var(--mu)}
+:root[data-style="mono"] .rem-hit .t b{font:700 13px var(--mu)}
+:root[data-style="mono"] .rem-sub{font:400 12px var(--mu)}
+:root[data-style="mono"] .rem-ed{border-top:var(--dot)}
+:root[data-style="mono"] .rem-sw span{width:40px;height:24px;border:1.5px solid var(--ink);background:none}
+:root[data-style="mono"] .rem-sw span::after{width:15px;height:15px;margin-top:-7.5px;box-sizing:border-box;background:none;border:1.5px solid var(--ink)}
+:root[data-style="mono"] .rem-sw input:checked+span{background:var(--ink);border-color:var(--ink)}
+:root[data-style="mono"] .rem-sw input:checked+span::after{transform:translateX(16px);background:var(--on);border-color:var(--on)}
+:root[data-style="mono"] .rem-pi{border:var(--dot);border-radius:50%;color:var(--ink)}
+:root[data-style="mono"] .rem-perm[data-perm="ok"] .rem-pi{background:var(--ink);color:var(--on);border:1.5px solid var(--ink)}
+:root[data-style="mono"] .rem-perm[data-perm="bad"] .rem-pi{color:var(--ink);border-color:var(--ink)}
+
+/* Menus with an odd number of tabs: the last tile takes the full row */
+:root[data-style="paperbox"] .pb-tiles>.pb-tile:last-child:nth-child(odd),:root[data-style="mono"] .mo-tiles>.mo-tile:last-child:nth-child(odd){grid-column:1/-1}
+/* Settings → Reminders row */
+a.linkrow.rem-link{color:var(--ink);text-decoration:none}
+.rem-link .rem-pi{width:34px;height:34px}
+.rem-link>.pxi:last-child{color:var(--muted)}
+.rem-link .t .small{display:block}
+/* B&W: the Reminders row in Settings uses the dotted card; bottom band labels get a hair more room */
+:root[data-style="mono"] a.linkrow.rem-link{border:var(--dot);border-radius:16px;background:none;padding:10px 12px;margin:0}
+:root[data-style="mono"] nav#nav a>span{font-size:9px;letter-spacing:0}

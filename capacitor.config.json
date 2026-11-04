@@ -3,5 +3,5 @@
   "appName": "Aware Mode",
   "webDir": "www",
   "android": { "backgroundColor": "#060914" },
-  "plugins": { "LocalNotifications": { "iconColor": "#e4572e" } }
+  "plugins": { "LocalNotifications": { "smallIcon": "ic_stat_aware", "iconColor": "#F8704F" } }
 }

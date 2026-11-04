@@ -3,6 +3,9 @@ name: Android APK
 on:
   push:
     branches: [main]
+  # pull requests build a test APK (downloadable from the run) but publish nothing
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -47,6 +50,7 @@ jobs:
           name: AwareMode-apk
           path: AwareMode.apk
       - name: Publish release
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
