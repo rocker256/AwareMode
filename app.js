@@ -142,7 +142,25 @@ function kindOf(t) {
   return 'medium';
 }
 function activeTasks(k) { const d = S.days[k]; return d ? d.tasks.filter(t => !t.movedTo) : []; }
-function dayCompletion(k) { const ts = activeTasks(k); if (!ts.length) return null; return ts.filter(t => t.done).length / ts.length * 100; }
+/* a task is open, half done (t.half) or done. Half done counts as 0.5 in completion, streaks and XP. */
+const isHalf = t => !!t.half && !t.done;
+const doneScore = ts => ts.reduce((a, t) => a + (t.done ? 1 : isHalf(t) ? 0.5 : 0), 0);
+const pctOf = ts => ts.length ? Math.round(doneScore(ts) / ts.length * 100) : 0;
+const doneLine = ts => { const h = ts.filter(isHalf).length; return `${ts.filter(t => t.done).length} of ${ts.length} done${h ? `<span class="hf"><i> · </i>${h} half</span>` : ''}`; };
+// unfinished tasks that can still go to tomorrow (half done ones keep their credit on the day, see carryTask)
+const unfinished = k => activeTasks(k).filter(x => !x.done && x.what && !x.carriedTo);
+// one checkbox, three states: tap cycles open → half done → done → open
+function cycleTask(t) {
+  if (t.done) { t.done = false; t.half = false; }
+  else if (t.half) { t.done = true; t.half = false; }
+  else {
+    t.half = true;
+    if ((S.ui.halfTips || 0) < 3) { S.ui.halfTips = (S.ui.halfTips || 0) + 1; toast('Half done. Tap again when it is finished.'); }
+  }
+}
+const checkState = t => t.done ? 'Done' : isHalf(t) ? 'Half done' : 'Not done';
+const taskCheck = (p, t) => `<label class="check ${isHalf(t) ? 'half' : ''}" title="${checkState(t)}. Tap to cycle: not done, half, done"><input type="checkbox" data-bind="${p}done" data-rr ${t.done ? 'checked' : ''} ${isHalf(t) ? 'data-half' : ''} aria-label="${checkState(t)}"><span></span></label>`;
+function dayCompletion(k) { const ts = activeTasks(k); if (!ts.length) return null; return doneScore(ts) / ts.length * 100; }
 function dayAvg(k, f) { return avg(activeTasks(k).map(t => t[f]).filter(v => v != null)); }
 const normName = s => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -461,7 +479,7 @@ const XP_PER_LEVEL = 500;
 const taskXp = t => ({ hard: 30, medium: 20, easy: 10 }[kindOf(t)] || 10);
 function xpInfo() {
   let xp = 0;
-  for (const d of Object.values(S.days)) for (const t of d.tasks || []) if (t.done && !t.movedTo) xp += taskXp(t);
+  for (const d of Object.values(S.days)) for (const t of d.tasks || []) if (!t.movedTo) xp += t.done ? taskXp(t) : isHalf(t) ? Math.round(taskXp(t) / 2) : 0;
   return { xp, level: Math.floor(xp / XP_PER_LEVEL) + 1, into: xp % XP_PER_LEVEL };
 }
 function levelUp(n) {
@@ -534,11 +552,12 @@ function taskRow(k, t, i, mode) {
   const p = `task|${k}|${t.id}|`;
   const amount = t.qty != null ? `${t.qty}${t.unit ? ' ' + t.unit : ''}` : '';
   const sub = t.movedTo ? 'Moved to ' + niceDate(t.movedTo, { weekday: 'short', day: 'numeric', month: 'short' })
+    : t.carriedTo ? 'Rest moved to ' + niceDate(t.carriedTo, { weekday: 'short', day: 'numeric', month: 'short' })
     : [t.when, amount, t.detail, t.where].filter(Boolean).join(' · ') || 'Tap to set amount, time and place';
   const dd = t.pd ? (today && t.ad ? `${t.pd}>${t.ad}` : `${t.pd}/10`) : '';
-  return `<div class="task ${t.done ? 'done' : ''} ${t.movedTo ? 'moved' : ''} ${open ? 'open' : ''}">
+  return `<div class="task ${t.done ? 'done' : isHalf(t) ? 'half' : ''} ${t.movedTo ? 'moved' : ''} ${open ? 'open' : ''}">
     <div class="trow" data-act="toggleTask" data-id="${t.id}" role="button" tabindex="0" aria-expanded="${open}">
-      ${today && !t.movedTo ? `<label class="check" title="Done"><input type="checkbox" data-bind="${p}done" data-rr ${t.done ? 'checked' : ''} aria-label="Mark done"><span></span></label>` : `<span class="num">${pad(i + 1)}</span>`}
+      ${today && !t.movedTo ? taskCheck(p, t) : `<span class="num">${pad(i + 1)}</span>`}
       <div class="t"><div class="name">${t.what ? esc(t.what) : '<span class="muted">Untitled task</span>'}</div><div class="sub">${esc(sub)}</div></div>
       ${pb ? '<span class="rt"><span class="row">' : ''}
       ${t.grade === 'g0' ? '<span class="tag grade" title="Grade 0 starter">G0</span>' : t.grade === 'g1' ? '<span class="tag grade" title="Grade 1 starter">G1</span>' : ''}
@@ -599,14 +618,14 @@ function taskEditor(k, t, mode) {
     </div>` : ''}
     ${pb ? `<div class="pb-acts">
       <button class="btn" data-act="focusTask" data-k="${k}" data-id="${t.id}">${px('focus', 16)}Focus</button>
-      ${today && !t.done && !t.movedTo ? `<button class="btn" data-act="moveTask" data-k="${k}" data-id="${t.id}">${px('arrow', 16)}To tomorrow</button>` : ''}
+      ${today && !t.done && !t.movedTo && !t.carriedTo ? `<button class="btn" data-act="moveTask" data-k="${k}" data-id="${t.id}">${px('arrow', 16)}To tomorrow</button>` : ''}
       ${adv ? `<button class="btn" data-act="dupTask" data-k="${k}" data-id="${t.id}">${px('copy', 16)}Duplicate</button>
       <button class="btn" data-act="mvTask" data-dir="-1" data-k="${k}" data-id="${t.id}">${px('up', 16)}Move up</button>
       <button class="btn" data-act="mvTask" data-dir="1" data-k="${k}" data-id="${t.id}">${px('down', 16)}Move down</button>` : ''}
       <button class="btn danger" data-act="delTask" data-k="${k}" data-id="${t.id}">${px('trash', 16)}Delete</button>
     </div>` : `<div class="row">
       <button class="btn sm" data-act="focusTask" data-k="${k}" data-id="${t.id}">${px('play', 9)} Focus</button>
-      ${today && !t.done && !t.movedTo ? `<button class="btn sm" data-act="moveTask" data-k="${k}" data-id="${t.id}">To tomorrow</button>` : ''}
+      ${today && !t.done && !t.movedTo && !t.carriedTo ? `<button class="btn sm" data-act="moveTask" data-k="${k}" data-id="${t.id}">To tomorrow</button>` : ''}
       <button class="btn sm" data-act="dupTask" data-k="${k}" data-id="${t.id}">Duplicate</button>
       <button class="icon-btn" data-act="mvTask" data-dir="-1" data-k="${k}" data-id="${t.id}" title="Move up" aria-label="Move up">^</button>
       <button class="icon-btn" data-act="mvTask" data-dir="1" data-k="${k}" data-id="${t.id}" title="Move down" aria-label="Move down">v</button>
@@ -642,8 +661,7 @@ V.attack = () => {
   const st = S.settings, t = todayKey();
   const k = S.ui.date || t;
   const ts = activeTasks(k), status = dayStatus(k);
-  const done = ts.filter(x => x.done).length;
-  const pctDone = ts.length ? Math.round(done / ts.length * 100) : 0;
+  const pctDone = pctOf(ts);
   const ad = dayAvg(k, 'ad'), pd = dayAvg(k, 'pd'), load = ad ?? pd;
   const mins = S.sessions.filter(s => s.d === k && s.type !== 'break').reduce((a, s) => a + s.m, 0);
   const reg = regression();
@@ -663,7 +681,7 @@ V.attack = () => {
   if (k === t && new Date().getHours() >= st.planReminderHour && tomorrowEmpty) h += `<div class="hint accent" style="margin:10px 0"><div>Plan tomorrow before today ends. <a href="#plan">Build tomorrow</a></div></div>`;
 
   h += `<div class="card ink"><div class="hero">
-      <div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${done} of ${ts.length} done</div></div>
+      <div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${doneLine(ts)}</div></div>
       <div style="min-width:0">
         <div class="row between"><span class="lbl">${ad != null ? 'Actual load' : 'Planned load'}</span><span class="pixel">${fmt1(load)}<span class="muted">/10</span></span></div>
         ${blocks(10, Math.round(load || 0), 'on')}
@@ -722,9 +740,10 @@ function factorsForm(k) {
 }
 function journalForm(k) {
   const st = S.settings, d = S.days[k] || { journal: {}, note: '' };
-  const ts = activeTasks(k), done = ts.filter(t => t.done);
-  const summary = ts.length ? `<div class="hint" style="margin-bottom:10px"><div><b>Plan vs result:</b> planned ${ts.length}, completed ${done.length}. Avg predicted ${fmt1(dayAvg(k, 'pd'))} vs actual ${fmt1(dayAvg(k, 'ad'))}.
-     ${ts.filter(t => !t.done).length ? `<br>Not done: ${ts.filter(t => !t.done).map(t => esc(t.what || 'untitled')).join(', ')}` : ''}</div></div>` : '';
+  const ts = activeTasks(k), done = ts.filter(t => t.done), half = ts.filter(isHalf), open = ts.filter(t => !t.done && !isHalf(t));
+  const names = l => l.map(t => esc(t.what || 'untitled')).join(', ');
+  const summary = ts.length ? `<div class="hint" style="margin-bottom:10px"><div><b>Plan vs result:</b> planned ${ts.length}, completed ${done.length}${half.length ? `, half done ${half.length}` : ''}. Avg predicted ${fmt1(dayAvg(k, 'pd'))} vs actual ${fmt1(dayAvg(k, 'ad'))}.
+     ${half.length ? `<br>Half done: ${names(half)}` : ''}${open.length ? `<br>Not done: ${names(open)}` : ''}</div></div>` : '';
   return summary + st.journalPrompts.map((q, i) => `<label class="f" style="margin-bottom:10px"><span>${esc(q)}</span><textarea data-bind="journal|${k}|${i}">${esc(d.journal[q] || '')}</textarea></label>`).join('')
     + `<label class="f"><span>Free notes</span><textarea data-bind="day|${k}|note">${esc(d.note || '')}</textarea></label>`;
 }
@@ -739,7 +758,7 @@ function sheetForPrint(k) {
 V.plan = () => {
   const st = S.settings, t = todayKey(), k = addDays(t, 1);
   const ts = activeTasks(k);
-  const undone = activeTasks(t).filter(x => !x.done && x.what);
+  const undone = unfinished(t);
   const rec = recurringTasks(k).filter(r => !ts.some(x => normName(x.what) === normName(r.t.what)));
   const top = rec.find(r => r.s && r.s.action === 'up') || rec.find(r => r.s && r.s.action === 'down');
   let h = `<div class="dayhead"><div><div class="eyebrow">Build a tomorrow</div><h1 class="title">Tomorrow</h1></div><span class="small muted">${esc(niceDate(k))}</span></div>
@@ -1062,7 +1081,7 @@ function historyDay(k) {
   return `<div class="card hday">
     <div class="row between"><a href="#attack" class="h2" data-act="openDay" data-k="${k}">${esc(niceDate(k, { weekday: 'short', day: 'numeric', month: 'short' }))}</a>
       <span class="small muted">${comp != null ? pct(comp) + ' done' : ''}${st !== 'normal' ? ` · ${st} day` : ''}</span></div>
-    ${ts.length ? `<ul class="hlist">${ts.map(t => `<li class="${t.done ? 'ok' : ''}"><span class="mark">${t.done ? '■' : '□'}</span><div style="min-width:0"><span>${esc(t.what || 'Untitled')}</span>
+    ${ts.length ? `<ul class="hlist">${ts.map(t => `<li class="${t.done ? 'ok' : isHalf(t) ? 'half' : ''}"><span class="mark" title="${checkState(t)}">${t.done ? '■' : isHalf(t) ? '◧' : '□'}</span><div style="min-width:0"><span>${esc(t.what || 'Untitled')}</span>
       <span class="muted small">${esc([t.qty != null ? t.qty + ' ' + (t.unit || '') : '', t.pd ? `PD ${t.pd}${t.ad ? ' > AD ' + t.ad : ''}` : '', t.movedTo ? 'moved' : ''].filter(Boolean).join(' · '))}</span>
       ${t.notes ? `<div class="small note">${esc(t.notes).replace(/\n/g, '<br>')}</div>` : ''}</div></li>`).join('')}</ul>` : ''}
     ${fl || rv.length ? `<div class="small muted" style="margin-top:8px">${fl}${fl && rv.length ? ' · ' : ''}${rv.length ? `Rules ${rv.filter(Boolean).length}/${rv.length} followed` : ''}</div>` : ''}
@@ -1202,11 +1221,11 @@ LV.rail = {
 /* ---------- Terminal (term layout): a status line on top, a command line at the bottom ---------- */
 LV.term = {
   attack() {
-    const k = todayKey(), ts = activeTasks(k), done = ts.filter(t => t.done).length, s = streak();
+    const k = todayKey(), ts = activeTasks(k), done = ts.filter(t => t.done).length, half = ts.filter(isHalf).length, s = streak();
     const load = dayAvg(k, 'ad') ?? dayAvg(k, 'pd');
     return `<pre class="tline">aware@mode:~$ status
-tasks ${done}/${ts.length} done   load ${fmt1(load)}/10   streak ${s.n}d   ${esc(niceDate(k, { weekday: 'short', day: 'numeric', month: 'short' }))}</pre>
-<pre class="tline muted">${ts.map((t, i) => `${String(i + 1).padStart(2)}  [${t.done ? 'x' : ' '}] ${esc(t.what || 'untitled')}${kindOf(t) ? '  #' + kindOf(t) : ''}`).join('\n') || '    no tasks. try: add Read 20 pages'}</pre>` + V.attack();
+tasks ${done}/${ts.length} done${half ? ` +${half} half` : ''}   load ${fmt1(load)}/10   streak ${s.n}d   ${esc(niceDate(k, { weekday: 'short', day: 'numeric', month: 'short' }))}</pre>
+<pre class="tline muted">${ts.map((t, i) => `${String(i + 1).padStart(2)}  [${t.done ? 'x' : isHalf(t) ? '/' : ' '}] ${esc(t.what || 'untitled')}${kindOf(t) ? '  #' + kindOf(t) : ''}`).join('\n') || '    no tasks. try: add Read 20 pages'}</pre>` + V.attack();
   },
 };
 /* ---------- Timeline layout: Today as one vertical line by hour ---------- */
@@ -1219,7 +1238,7 @@ LV.timeline = {
     const items = d.tasks.map((x, i) => ({ x, i, m: mins(x) }));
     const anytime = items.filter(o => o.m == null), timed = items.filter(o => o.m != null).sort((a, b) => a.m - b.m);
     let nowPlaced = k !== t, rows = '';
-    const node = o => `<li class="tl-item ${o.x.done ? 'is-done' : ''}"><span class="tl-time">${o.m == null ? '' : esc(o.x.when)}</span><span class="tl-dot"></span><div class="tl-body">${taskRow(k, o.x, o.i, 'today')}</div></li>`;
+    const node = o => `<li class="tl-item ${o.x.done ? 'is-done' : isHalf(o.x) ? 'is-half' : ''}"><span class="tl-time">${o.m == null ? '' : esc(o.x.when)}</span><span class="tl-dot"></span><div class="tl-body">${taskRow(k, o.x, o.i, 'today')}</div></li>`;
     for (const o of timed) {
       if (!nowPlaced && o.m > nowM) { rows += `<li class="tl-now"><span class="tl-time">${pad(now.getHours())}:${pad(now.getMinutes())}</span><span class="tl-dot"></span><b>Now</b></li>`; nowPlaced = true; }
       rows += node(o);
@@ -1228,7 +1247,7 @@ LV.timeline = {
     let h = `<div class="tl-head"><div><div class="eyebrow">${esc(niceDate(k, { weekday: 'long', day: 'numeric', month: 'long' }))}</div><h1 class="title">${k === t ? 'Your day' : 'That day'}</h1></div>
       <div class="tl-score"><b>${done}</b>/${ts.length}</div></div>
       <div class="datenav no-print"><button class="icon-btn" data-act="shiftDate" data-n="-1" aria-label="Previous day">&lt;</button><input type="date" value="${k}" data-act-change="pickDate" aria-label="Pick date"><button class="icon-btn" data-act="shiftDate" data-n="1" aria-label="Next day">&gt;</button>${k !== t ? '<button class="btn sm" data-act="goToday">Today</button>' : ''}<button class="btn sm" data-act="goHistory">History</button></div>
-      <div class="tl-bar"><i style="width:${ts.length ? done / ts.length * 100 : 0}%"></i></div>`;
+      <div class="tl-bar"><i style="width:${pctOf(ts)}%"></i></div>`;
     dayHints(k).forEach(([c, m]) => { h += `<div class="hint ${c}" style="margin:8px 0">${esc(m)}</div>`; });
     if (anytime.length) h += `<div class="eyebrow tl-label">Anytime</div><ul class="timeline tasks">${anytime.map(node).join('')}</ul>`;
     h += `<div class="eyebrow tl-label">By the hour</div><ul class="timeline tasks">${rows}</ul>`;
@@ -1252,18 +1271,18 @@ LV.deck = {
     if (deckSkip >= q.length) deckSkip = 0;
     const cur = q[deckSkip];
     let h = `<div class="dk-head"><div><div class="eyebrow">${esc(niceDate(k, { weekday: 'long', day: 'numeric', month: 'short' }))}</div><h1 class="title">${k === t ? 'Today' : 'That day'}</h1></div><div class="dk-count"><b>${done}</b>/${ts.length}<span>done</span></div></div>
-      <div class="dk-pips">${ts.map(x => `<i class="${x.done ? 'on' : x === cur ? 'cur' : ''}"></i>`).join('')}</div>`;
+      <div class="dk-pips">${ts.map(x => `<i class="${x.done ? 'on' : x === cur ? 'cur' : ''}${isHalf(x) ? ' half' : ''}"></i>`).join('')}</div>`;
     if (cur) {
       const amount = cur.qty != null ? `${cur.qty}${cur.unit ? ' ' + cur.unit : ''}` : '';
       const kind = kindOf(cur);
       h += `<div class="dk-card" id="dkcard" data-id="${cur.id}" data-k="${k}">
-        <div class="dk-top"><span>${q.length > 1 ? `${deckSkip + 1} of ${q.length} left` : 'Last one'}</span>${kind ? `<span class="tag ${kind}">${kind}</span>` : ''}</div>
+        <div class="dk-top"><span>${q.length > 1 ? `${deckSkip + 1} of ${q.length} left` : 'Last one'}${isHalf(cur) ? ' · half done' : ''}</span>${kind ? `<span class="tag ${kind}">${kind}</span>` : ''}</div>
         <h2 class="dk-name">${esc(cur.what || 'Untitled task')}</h2>
         <dl class="dk-facts">${amount ? `<div><dt>How much</dt><dd>${esc(amount)}</dd></div>` : ''}${cur.when ? `<div><dt>When</dt><dd>${esc(cur.when)}</dd></div>` : ''}${cur.where ? `<div><dt>Where</dt><dd>${esc(cur.where)}</dd></div>` : ''}${cur.pd ? `<div><dt>Difficulty</dt><dd>${cur.pd}/10</dd></div>` : ''}</dl>
         ${cur.detail ? `<p class="dk-detail">${esc(cur.detail)}</p>` : ''}
         <div class="dk-acts"><button class="btn dk-skip" data-act="deckSkip" ${q.length < 2 ? 'disabled' : ''}>Skip</button><button class="btn primary dk-done" data-act="deckDone" data-k="${k}" data-id="${cur.id}">Done</button></div>
-        <div class="dk-more"><button class="btn sm" data-act="focusTask" data-k="${k}" data-id="${cur.id}">${px('play', 10)} Focus on it</button><button class="btn sm ghost" data-act="toggleTask" data-id="${cur.id}">Edit</button></div>
-      </div><p class="dk-hint muted small">Swipe right for done, left to skip.</p>`;
+        <div class="dk-more"><button class="btn sm" data-act="focusTask" data-k="${k}" data-id="${cur.id}">${px('play', 10)} Focus on it</button><button class="btn sm dk-half ${isHalf(cur) ? 'on' : ''}" data-act="deckHalf" data-k="${k}" data-id="${cur.id}" aria-pressed="${isHalf(cur)}"><i></i>Half</button><button class="btn sm ghost" data-act="toggleTask" data-id="${cur.id}">Edit</button></div>
+      </div><p class="dk-hint muted small">Swipe right for done, left to skip. Half keeps the card in the deck.</p>`;
       if (openTask.has(cur.id)) h += `<div class="tasks">${taskRow(k, cur, ts.indexOf(cur), 'today')}</div>`;
     } else {
       h += `<div class="dk-card dk-empty"><h2 class="dk-name">${ts.length ? 'All done.' : 'Empty deck.'}</h2><p>${ts.length ? 'Every card is cleared. Plan tomorrow while it is fresh.' : `Add your first task. Aim for ${st.hardTasksTarget} hard ones around ${st.targetDifficulty}/10.`}</p>
@@ -1320,7 +1339,7 @@ LV.cyber = {
   attack() {
     const st = S.settings, t = todayKey(), k = S.ui.date || t;
     const ts = activeTasks(k), status = dayStatus(k), d = S.days[k] || { tasks: [] };
-    const done = ts.filter(x => x.done).length, pctDone = ts.length ? Math.round(done / ts.length * 100) : 0;
+    const done = ts.filter(x => x.done).length, half = ts.filter(isHalf).length, pctDone = pctOf(ts);
     const ad = dayAvg(k, 'ad'), pd = dayAvg(k, 'pd');
     const mins = S.sessions.filter(s => s.d === k && s.type !== 'break').reduce((a, s) => a + s.m, 0);
     const reg = regression(), tomorrowEmpty = !activeTasks(addDays(t, 1)).length;
@@ -1339,7 +1358,7 @@ LV.cyber = {
     dayHints(k).forEach(([c, m]) => al.push([c, esc(m)]));
     h += cyAlerts(al);
     h += `<div class="cy-br"><div class="card cy-hero">
-      <div class="hero"><div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${done} of ${ts.length} done</div></div>
+      <div class="hero"><div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${doneLine(ts)}</div></div>
         <div class="cy-meters">
           <div><div class="row between"><span class="lbl">Planned load</span><b>${pd != null ? Math.round(pd) + '/10' : '–'}</b></div>${cyBlocks(Math.round(pd || 0), st.targetDifficulty)}</div>
           <div><div class="row between"><span class="lbl">Actual load</span><b class="on">${ad != null ? Math.round(ad) + '/10' : '–'}</b></div>${cyBlocks(Math.round(ad || 0), st.targetDifficulty)}</div>
@@ -1358,7 +1377,7 @@ LV.cyber = {
   plan() {
     const st = S.settings, t = todayKey(), k = addDays(t, 1);
     const ts = activeTasks(k), d = S.days[k] || { tasks: [] };
-    const undone = activeTasks(t).filter(x => !x.done && x.what);
+    const undone = unfinished(t);
     const rec = recurringTasks(k).filter(r => !ts.some(x => normName(x.what) === normName(r.t.what)));
     const top = rec.find(r => r.s && r.s.action === 'up') || rec.find(r => r.s && r.s.action === 'down');
     let h = `<div class="dayhead"><div><div class="eyebrow">Build a tomorrow</div><h1 class="title">Tomorrow</h1></div><span class="small muted cy-mono">${esc(niceDate(k, { weekday: 'short', day: 'numeric', month: 'short' }))}</span></div>
@@ -1458,7 +1477,7 @@ function pbRules(k) {
 const pbAdd = (k, label = 'Add task') => `<button class="pb-dash no-print" data-act="addTask" data-k="${k}">${px('plus', 16)}${label}</button>`;
 function pbTasks(k, mode, empty) {
   const st = S.settings, d = S.days[k] || { tasks: [] };
-  const ts = activeTasks(k), goal = simple() ? (ts.length ? `${ts.filter(x => x.done).length} of ${ts.length} done` : '') : `Next day attack goal ${st.targetDifficulty}/10`;
+  const ts = activeTasks(k), goal = simple() ? (ts.length ? doneLine(ts) : '') : `Next day attack goal ${st.targetDifficulty}/10`;
   return `<div class="card pb-tasks"><div class="row between pb-th"><b>Tasks</b><span class="eyebrow">${goal}</span></div>
     <div class="tasks">${d.tasks.length ? d.tasks.map((x, i) => taskRow(k, x, i, mode)).join('') : `<div class="empty-row">${empty}</div>`}</div></div>`;
 }
@@ -1482,7 +1501,7 @@ LV.paper = {
   attack() {
     const st = S.settings, t = todayKey(), k = S.ui.date || t;
     const ts = activeTasks(k), status = dayStatus(k);
-    const done = ts.filter(x => x.done).length, pctDone = ts.length ? Math.round(done / ts.length * 100) : 0;
+    const done = ts.filter(x => x.done).length, half = ts.filter(isHalf).length, pctDone = pctOf(ts);
     const ad = dayAvg(k, 'ad'), pd = dayAvg(k, 'pd');
     const mins = S.sessions.filter(s => s.d === k && s.type !== 'break').reduce((a, s) => a + s.m, 0);
     const reg = regression(), tomorrowEmpty = !activeTasks(addDays(t, 1)).length, sm = simple();
@@ -1500,7 +1519,7 @@ LV.paper = {
     if (status !== 'normal') al.push(['good', status === 'rest' ? "Rest day. Recovery is part of the system and it won't break your streak." : 'Grace day. Life happened. The streak is protected; do what you can.']);
     dayHints(k).forEach(([c, m]) => al.push([c, esc(m)]));
     h += pbHints(sm ? al.slice(0, 1).filter(x => x[0] === 'accent') : al);
-    if (!sm) h += `<div class="card pb-hero"><div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${done} of ${ts.length} done</div></div>
+    if (!sm) h += `<div class="card pb-hero"><div><div class="big">${pctDone}<small>%</small></div><div class="small muted">${doneLine(ts)}</div></div>
       <div class="pb-meters">
         <div><span class="lbl">Planned</span>${pbBlocks(Math.round(pd || 0), 'f')}<b>${pd != null ? Math.round(pd) : '–'}/10</b></div>
         <div><span class="lbl">Actual</span>${pbBlocks(Math.round(ad || 0), 'c')}<b>${ad != null ? Math.round(ad) : '–'}/10</b></div>
@@ -1518,7 +1537,7 @@ LV.paper = {
   plan() {
     const st = S.settings, t = todayKey(), k = addDays(t, 1);
     const ts = activeTasks(k);
-    const undone = activeTasks(t).filter(x => !x.done && x.what);
+    const undone = unfinished(t);
     const rec = recurringTasks(k).filter(r => !ts.some(x => normName(x.what) === normName(r.t.what)));
     const top = rec.find(r => r.s && r.s.action === 'up') || rec.find(r => r.s && r.s.action === 'down');
     let h = `<div class="dayhead"><div><div class="eyebrow">Build a tomorrow</div><h1 class="title">Tomorrow</h1></div><span class="chip pb-dchip">${esc(niceDate(k, { weekday: 'short', day: 'numeric', month: 'short' }))}</span></div>
@@ -1617,12 +1636,12 @@ function moTaskRow(k, t, i, mode) {
   const kind = kindOf(t), today = mode === 'today', open = openTask.has(t.id);
   const p = `task|${k}|${t.id}|`;
   const amount = t.qty != null ? `${t.qty}${t.unit ? ' ' + t.unit : ''}` : '';
-  const sub = t.movedTo ? 'Moved to ' + niceDate(t.movedTo, { weekday: 'short', day: 'numeric', month: 'short' }) : [t.when, amount, t.detail, t.where].filter(Boolean).join(' · ');
+  const sub = t.movedTo ? 'Moved to ' + niceDate(t.movedTo, { weekday: 'short', day: 'numeric', month: 'short' }) : t.carriedTo ? 'Rest moved to ' + niceDate(t.carriedTo, { weekday: 'short', day: 'numeric', month: 'short' }) : [t.when, amount, t.detail, t.where].filter(Boolean).join(' · ');
   const dd = t.pd ? (today && t.ad ? `${t.pd}>${t.ad}` : `${t.pd}/10`) : '';
   const grade = t.grade === 'g0' ? '<span class="tag grade">G0</span>' : t.grade === 'g1' ? '<span class="tag grade">G1</span>' : '';
-  return `<div class="task ${t.done ? 'done' : ''} ${t.movedTo ? 'moved' : ''} ${open ? 'open' : ''}">
+  return `<div class="task ${t.done ? 'done' : isHalf(t) ? 'half' : ''} ${t.movedTo ? 'moved' : ''} ${open ? 'open' : ''}">
     <div class="trow" data-act="toggleTask" data-id="${t.id}" role="button" tabindex="0" aria-expanded="${open}">
-      ${today && !t.movedTo ? `<label class="check" title="Done"><input type="checkbox" data-bind="${p}done" data-rr ${t.done ? 'checked' : ''} aria-label="Mark done"><span></span></label>` : `<span class="num">${i + 1}</span>`}
+      ${today && !t.movedTo ? taskCheck(p, t) : `<span class="num">${i + 1}</span>`}
       <div class="t"><div class="l"><span class="name">${t.what ? esc(t.what) : 'Untitled task'}</span><span class="tg">${grade}${moTag(kind)}</span></div>
         ${sub || dd ? `<div class="l"><span class="sub">${esc(sub)}</span>${dd ? `<span class="dd">${dd}</span>` : ''}</div>` : ''}</div>
       <span class="chev">${px('chev', 16)}</span>
@@ -1655,7 +1674,7 @@ function moEditor(k, t, mode) {
     ${adv ? `<div class="f"><span class="lbl">Starter grade</span><div class="seg mo-grade">${[['full', 'Full task'], ['g1', `Grade 1: ${st.timer.starterG1}-min version`], ['g0', `Grade 0: ${st.timer.starterG0}-min version`]].map(([v, l]) => `<button type="button" class="${(t.grade || 'full') === v ? 'on' : ''}" data-act="setGrade" ${a} data-v="${v}">${l}</button>`).join('')}</div></div>` : ''}
     <div class="mo-acts">
       ${act('focus', 'Focus', `data-act="focusTask" ${a}`)}
-      ${today && !t.done && !t.movedTo ? act('plan', 'To tomorrow', `data-act="moveTask" ${a}`) : ''}
+      ${today && !t.done && !t.movedTo && !t.carriedTo ? act('plan', 'To tomorrow', `data-act="moveTask" ${a}`) : ''}
       ${adv ? `${act('copy', 'Duplicate', `data-act="dupTask" ${a}`)}
       ${act('up', 'Move up', `data-act="mvTask" data-dir="-1" ${a}`)}
       ${act('down', 'Move down', `data-act="mvTask" data-dir="1" ${a}`)}` : ''}
@@ -1710,7 +1729,7 @@ function moHistoryDay(k) {
   return `<div class="card hday">
     <div class="mo-hd"><a href="#attack" data-act="openDay" data-k="${k}">${esc(niceDate(k, { weekday: 'short', day: 'numeric', month: 'short' }))}</a>
       <span class="tag ${st === 'normal' ? 'grade' : 'easy'}">${st === 'normal' ? 'Attack' : st === 'grace' ? 'Grace' : 'Rest'}</span>${comp != null ? `<b>${pct(comp)}</b>` : ''}</div>
-    ${ts.length ? `<ul class="hlist">${ts.map(t => `<li><span class="mark">${t.done ? '■' : '□'}</span><div class="ht"><span>${esc(t.what || 'Untitled')}${t.qty != null ? ` · ${esc(t.qty + ' ' + (t.unit || ''))}` : ''}${t.movedTo ? ' <span class="muted">· moved</span>' : ''}</span>${t.pd ? `<b>${t.pd}${t.ad ? ' &gt; ' + t.ad : ''}</b>` : ''}</div>
+    ${ts.length ? `<ul class="hlist">${ts.map(t => `<li class="${isHalf(t) ? 'half' : ''}"><span class="mark" title="${checkState(t)}">${t.done ? '■' : isHalf(t) ? '◧' : '□'}</span><div class="ht"><span>${esc(t.what || 'Untitled')}${t.qty != null ? ` · ${esc(t.qty + ' ' + (t.unit || ''))}` : ''}${t.movedTo ? ' <span class="muted">· moved</span>' : ''}</span>${t.pd ? `<b>${t.pd}${t.ad ? ' &gt; ' + t.ad : ''}</b>` : ''}</div>
       ${t.notes ? `<div class="note">${esc(t.notes).replace(/\n/g, '<br>')}</div>` : ''}</li>`).join('')}</ul>` : ''}
     ${fl ? `<div class="muted">${fl}</div>` : ''}${rv.length ? `<div>Rules ${rv.filter(Boolean).length}/${rv.length} followed</div>` : ''}
     ${journal.map(([q, v]) => `<div class="hq"><span class="muted">${esc(q)}</span> ${esc(v).replace(/\n/g, '<br>')}</div>`).join('')}
@@ -1721,7 +1740,7 @@ LV.mono = {
   attack() {
     const st = S.settings, t = todayKey(), k = S.ui.date || t;
     const ts = activeTasks(k), status = dayStatus(k);
-    const done = ts.filter(x => x.done).length, pctDone = ts.length ? Math.round(done / ts.length * 100) : 0;
+    const done = ts.filter(x => x.done).length, half = ts.filter(isHalf).length, pctDone = pctOf(ts);
     const ad = dayAvg(k, 'ad'), pd = dayAvg(k, 'pd');
     const mins = S.sessions.filter(s => s.d === k && s.type !== 'break').reduce((a, s) => a + s.m, 0);
     const reg = regression(), remind = k === t && new Date().getHours() >= st.planReminderHour && !activeTasks(addDays(t, 1)).length, sm = simple();
@@ -1732,9 +1751,9 @@ LV.mono = {
         : `<label class="d on" data-act="pickOpen">${lab}<input type="date" value="${k}" data-act-change="pickDate" aria-label="Pick date"></label>`;
     }
     h += `<button class="mo-rb" data-act="shiftDate" data-n="1" aria-label="Next day">${px('chev', 14)}</button></div>
-      ${sm ? `<div class="mo-row no-print">${k !== t ? '<button class="tx" data-act="goToday">Today</button>' : ''}<span class="muted"><b>${done}</b> of ${ts.length} done</span>${remind ? `<a class="btn sm grey" href="#plan" data-nav="plan">Build tomorrow${px('chev', 14)}</a>` : ''}</div>` : `<div class="mo-row no-print">${k !== t ? '<button class="tx" data-act="goToday">Today</button>' : ''}<button class="tx" data-act="goHistory">${px('history', 14)}History</button>${NATIVE ? '' : `<button class="tx" data-act="print">${px('print', 14)}Print sheet</button>`}
+      ${sm ? `<div class="mo-row no-print">${k !== t ? '<button class="tx" data-act="goToday">Today</button>' : ''}<span class="muted"><b>${done}</b> of ${ts.length} done${half ? ` · ${half} half` : ''}</span>${remind ? `<a class="btn sm grey" href="#plan" data-nav="plan">Build tomorrow${px('chev', 14)}</a>` : ''}</div>` : `<div class="mo-row no-print">${k !== t ? '<button class="tx" data-act="goToday">Today</button>' : ''}<button class="tx" data-act="goHistory">${px('history', 14)}History</button>${NATIVE ? '' : `<button class="tx" data-act="print">${px('print', 14)}Print sheet</button>`}
         ${remind ? `<a class="btn sm grey" href="#plan" data-nav="plan">Build tomorrow${px('chev', 14)}</a>` : ''}</div>
-      <div class="mo-box mo-read"><div class="mo-hero"><span class="mo-big">${pctDone}<small> %</small></span><span class="muted">${done} of ${ts.length} done</span></div>
+      <div class="mo-box mo-read"><div class="mo-hero"><span class="mo-big">${pctDone}<small> %</small></span><span class="muted">${doneLine(ts)}</span></div>
         <div class="mo-meters">
           <div><span class="lbl">Planned</span>${moBar(10, Math.round(pd || 0))}<b>${pd != null ? Math.round(pd) : '–'}/10</b></div>
           <div><span class="lbl">Actual</span>${moBar(10, Math.round(ad || 0))}<b>${ad != null ? Math.round(ad) : '–'}/10</b></div>
@@ -1752,7 +1771,7 @@ LV.mono = {
   },
   plan() {
     const st = S.settings, t = todayKey(), k = addDays(t, 1), ts = activeTasks(k);
-    const undone = activeTasks(t).filter(x => !x.done && x.what);
+    const undone = unfinished(t);
     const rec = recurringTasks(k).filter(r => !ts.some(x => normName(x.what) === normName(r.t.what)));
     const top = rec.find(r => r.s && r.s.action === 'up') || rec.find(r => r.s && r.s.action === 'down');
     const woops = S.woops.filter(w => w.active && (w.obstacle || w.plan));
@@ -1867,7 +1886,7 @@ LV.mono = {
   },
 };
 
-const CMD_HELP = 'today | tomorrow | focus | woop | manual | insights | history | settings | 1-8 | add <task> | done <n> | start | pause | reset | style <name> | help';
+const CMD_HELP = 'today | tomorrow | focus | woop | manual | insights | history | settings | 1-8 | add <task> | done <n> | half <n> | undo <n> | start | pause | reset | style <name> | help';
 function runCmd(raw) {
   const [c0, ...rest] = raw.trim().split(/\s+/), c = (c0 || '').toLowerCase(), arg = rest.join(' ');
   const views = { today: 'attack', t: 'attack', tomorrow: 'plan', plan: 'plan', focus: 'focus', f: 'focus', woop: 'woop', manual: 'manual', insights: 'insights', history: 'history', settings: 'settings' };
@@ -1882,11 +1901,14 @@ function runCmd(raw) {
     getDay(k, true).tasks.push(newTask({ what: arg })); save(); render();
     return `added to ${S.ui.view === 'plan' ? 'tomorrow' : 'today'}: ${arg}`;
   }
-  if (c === 'done' || c === 'undo') {
+  if (c === 'done' || c === 'undo' || c === 'half') {
     const t = activeTasks(todayKey())[+arg - 1];
     if (!t) return 'no task ' + (arg || '?') + '. numbers are on the today screen';
-    t.done = c === 'done' ? !t.done : false; save(); render();
-    return `${t.done ? 'done' : 'not done'}: ${t.what || 'untitled'}`;
+    if (c === 'done') { t.done = !t.done; t.half = false; }
+    else if (c === 'half') { t.half = !isHalf(t); t.done = false; }
+    else { t.done = false; t.half = false; }
+    save(); render();
+    return `${checkState(t).toLowerCase()}: ${t.what || 'untitled'}`;
   }
   if (c === 'start') { ACT.startFocus(); if (!T.running) ACT.tToggle(); return 'timer running'; }
   if (c === 'pause') { if (T.running) ACT.tToggle(); return 'timer paused'; }
@@ -1922,6 +1944,7 @@ function render() {
   const ro = v === 'attack' && isPast(S.ui.date) ? `<div class="ro-note">Past day: view only</div>` : '';
   $('#main').innerHTML = `<div class="wrap">${ro}${(LV[layout()]?.[v] || V[v])()}</div>`;
   lockPast($('#main'));
+  document.querySelectorAll('#main input[data-half]').forEach(i => { i.indeterminate = true; });
   $('#main').dataset.view = v;
   document.querySelectorAll('#main .title').forEach(h => { h.dataset.t = h.textContent; });
   window.scrollTo(0, y);
@@ -1941,8 +1964,8 @@ window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 /* ---------- binding ---------- */
 const DAY_BINDS = ['task', 'day', 'factor', 'journal'];
 // actions that change the day in data-k (or data-path for setval); hidden ones are pure edit buttons
-const DAY_ACTS = ['deckDone', 'setGrade', 'setval', 'addTask', 'delTask', 'dupTask', 'mvTask', 'moveTask', 'applySug', 'setStatus', 'ruleSet', 'ruleCycle', 'factorSet'];
-const DAY_ACTS_HIDE = ['deckDone', 'addTask', 'delTask', 'dupTask', 'mvTask', 'moveTask', 'applySug'];
+const DAY_ACTS = ['deckDone', 'deckHalf', 'setGrade', 'setval', 'addTask', 'delTask', 'dupTask', 'mvTask', 'moveTask', 'applySug', 'setStatus', 'ruleSet', 'ruleCycle', 'factorSet'];
+const DAY_ACTS_HIDE = ['deckDone', 'deckHalf', 'addTask', 'delTask', 'dupTask', 'mvTask', 'moveTask', 'applySug'];
 const actDay = el => el.dataset.k || (el.dataset.act === 'setval' ? (el.dataset.path || '').split('|')[1] : '');
 function lockPast(root) {
   root.querySelectorAll('[data-bind]').forEach(el => { const p = el.dataset.bind.split('|'); if (DAY_BINDS.includes(p[0]) && isPast(p[1])) el.disabled = true; });
@@ -1958,7 +1981,7 @@ function bindSet(el) {
   let v = el.type === 'checkbox' ? el.checked : el.value;
   if (el.type === 'number' || 'num' in el.dataset) v = num(el.value);
   switch (kind) {
-    case 'task': { const t = findTask(parts[1], parts[2]); if (!t) return; t[parts[3]] = v; break; }
+    case 'task': { const t = findTask(parts[1], parts[2]); if (!t) return; if (parts[3] === 'done') cycleTask(t); else t[parts[3]] = v; break; }
     case 'day': getDay(parts[1], true)[parts[2]] = v; break;
     case 'factor': { const d = getDay(parts[1], true); if (v === '' || v == null) delete d.factors[parts[2]]; else d.factors[parts[2]] = v; break; }
     case 'journal': { const d = getDay(parts[1], true); const q = S.settings.journalPrompts[+parts[2]]; if (q != null) d.journal[q] = v; break; }
@@ -2006,10 +2029,21 @@ function copyText(t) {
   const fallback = () => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('Copied'); } catch (e) { toast('Copy failed. Select the text and copy it.'); } ta.remove(); };
   if (navigator.clipboard?.writeText) navigator.clipboard.writeText(t).then(() => toast('Copied'), fallback); else fallback();
 }
+// copy a task to day `to`; an open task leaves its day, a half done one stays there with its half credit
+function carryTask(x, from, to) {
+  getDay(to, true).tasks.push(newTask({ ...x, id: uid(), done: false, half: false, ad: null, movedTo: undefined, carriedTo: undefined, carriedFrom: from }));
+  if (isHalf(x)) x.carriedTo = to; else x.movedTo = to;
+}
 function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
 
 const ACT = {
-  deckDone(el) { const t = findTask(el.dataset.k, el.dataset.id); if (!t) return; t.done = true; save(); render(); toast('Done: ' + (t.what || 'task')); },
+  deckDone(el) { const t = findTask(el.dataset.k, el.dataset.id); if (!t) return; t.done = true; t.half = false; save(); render(); toast('Done: ' + (t.what || 'task')); },
+  // half done keeps the card in the deck and moves on to the next one
+  deckHalf(el) {
+    const t = findTask(el.dataset.k, el.dataset.id); if (!t) return;
+    t.half = !isHalf(t); t.done = false; if (t.half) deckSkip++;
+    save(); render(); toast((t.half ? 'Half done: ' : 'Not half: ') + (t.what || 'task'));
+  },
   deckSkip() { deckSkip++; render(); },
   menu(el, e) { e?.preventDefault(); document.documentElement.classList.toggle('menu-open'); },
   setGrade(el) { const t = findTask(el.dataset.k, el.dataset.id); if (!t) return; t.grade = el.dataset.v; save(); render(); },
@@ -2035,12 +2069,11 @@ const ACT = {
     T.left -= cut; T.total = Math.max(T.left, T.total - cut); if (T.running) T.endAt -= cut * 1000; nativeSchedule(); render();
   },
   delTask: async el => { if (!(await confirmBox('Delete this task?', 'Delete', 'danger'))) return; const d = S.days[el.dataset.k]; d.tasks = d.tasks.filter(t => t.id !== el.dataset.id); save(); render(); },
-  dupTask(el) { const d = S.days[el.dataset.k]; const i = d.tasks.findIndex(t => t.id === el.dataset.id); d.tasks.splice(i + 1, 0, newTask({ ...d.tasks[i], id: uid(), done: false, ad: null, movedTo: undefined })); save(); render(); },
+  dupTask(el) { const d = S.days[el.dataset.k]; const i = d.tasks.findIndex(t => t.id === el.dataset.id); d.tasks.splice(i + 1, 0, newTask({ ...d.tasks[i], id: uid(), done: false, half: false, ad: null, movedTo: undefined, carriedTo: undefined })); save(); render(); },
   mvTask(el) { const d = S.days[el.dataset.k]; moveIn(d.tasks, d.tasks.findIndex(t => t.id === el.dataset.id), +el.dataset.dir); save(); render(); },
   moveTask(el) {
     const k = el.dataset.k, t = findTask(k, el.dataset.id), to = addDays(k, 1);
-    getDay(to, true).tasks.push(newTask({ ...t, id: uid(), done: false, ad: null, movedTo: undefined, carriedFrom: k }));
-    t.movedTo = to; save(); render(); toast('Moved to tomorrow');
+    carryTask(t, k, to); save(); render(); toast(isHalf(t) ? 'Rest moved to tomorrow' : 'Moved to tomorrow');
   },
   focusTask(el) { T.taskKey = el.dataset.k; T.taskId = el.dataset.id; const t = findTask(T.taskKey, T.taskId); if (t && t.grade !== 'full' && !T.running) tSet('starter', t.grade === 'g0' ? S.settings.timer.starterG0 : S.settings.timer.starterG1); go('focus'); },
   applySug(el) { const t = findTask(el.dataset.k, el.dataset.id); if (t) { t.qty = +el.dataset.q; save(); render(); } },
@@ -2061,8 +2094,8 @@ const ACT = {
   },
   carry() {
     const t = todayKey(), k = addDays(t, 1), d = getDay(k, true);
-    const undone = activeTasks(t).filter(x => !x.done && x.what);
-    undone.forEach(x => { d.tasks.push(newTask({ ...x, id: uid(), done: false, ad: null, movedTo: undefined, carriedFrom: t })); x.movedTo = k; });
+    const undone = unfinished(t);
+    undone.forEach(x => carryTask(x, t, k));
     save(); render(); toast(`Carried over ${undone.length} task${undone.length === 1 ? '' : 's'}`);
   },
   repeatToday() {
@@ -2148,7 +2181,7 @@ const ACT = {
   }; f.click(); },
   csv() {
     const rows = [['date', 'what', 'qty', 'unit', 'detail', 'when', 'where', 'pd', 'ad', 'done', 'grade', 'notes']];
-    taskHistory().forEach(({ k, t }) => rows.push([k, t.what, t.qty ?? '', t.unit, t.detail, t.when, t.where, t.pd ?? '', t.ad ?? '', t.done ? 1 : 0, t.grade, t.notes]));
+    taskHistory().forEach(({ k, t }) => rows.push([k, t.what, t.qty ?? '', t.unit, t.detail, t.when, t.where, t.pd ?? '', t.ad ?? '', t.done ? 1 : isHalf(t) ? 0.5 : 0, t.grade, t.notes]));
     download(`aware-mode-tasks-${todayKey()}.csv`, rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n'), 'text/csv');
   },
   resetSettings: async () => { if (!(await confirmBox('Reset all settings (prompts, factors, timer, labels) to defaults? Your tasks, rules and journal stay.', 'Reset'))) return; S.settings = defaultSettings(); save(); applyTheme(); render(); },

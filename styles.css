@@ -2570,3 +2570,46 @@ ul.timeline::before{content:"";position:absolute;left:62px;top:6px;bottom:6px;wi
 #main :is(input,textarea,select):disabled{opacity:1;color:inherit;-webkit-text-fill-color:currentColor}
 /* the -5 min button makes these rows one button wider; let Reset wrap instead of overflowing */
 :root[data-style="cyberpunk"] .cy-ctrls,:root[data-style="paperbox"] .pb-ctrls{flex-wrap:wrap}
+
+/* ===== HALF DONE TASKS (all styles) =====
+   The task checkbox cycles open → half → done. Half is the same box half filled (◧, ◐ when round),
+   in the colour that style uses for done, so it reads as "halfway there" without adding anything to the row. */
+:root .check.half span{--hf:var(--good);background:linear-gradient(90deg,var(--hf) 50%,var(--surface) 50%);border-color:var(--hf)}
+.hlist li.half .mark{color:var(--good)}
+:root[data-style="bw"] .check.half span,:root[data-style="simplified"] .check.half span,:root[data-style="deck"] .check.half span{--hf:var(--ink)}
+:root[data-style="bw"] .hlist li.half .mark{color:var(--ink)}
+:root:is([data-style="gamified"],[data-style="studio"],[data-style="timeline"]) .check.half span{--hf:var(--accent)}
+:root[data-style="gamified"] .check.half span{background:linear-gradient(90deg,var(--accent) 50%,transparent 50%)}
+:root[data-style="terminal"] .check.half span{background:transparent}
+:root[data-style="terminal"] .check.half span::before{content:"[/]";color:var(--warn)}
+:root[data-style="cyberpunk"] .check.half span{--hf:var(--cy);background:linear-gradient(90deg,var(--cy) 50%,var(--surface2) 50%)}
+:root[data-style="cyberpunk"] .hlist li.half .mark{color:var(--cy)}
+:root[data-style="paperbox"] .check.half span{--hf:var(--fill);border-color:var(--o)}
+:root[data-style="paperbox"] .hlist li.half .mark{color:var(--ink)}
+:root[data-style="mono"] .check.half span{background:linear-gradient(90deg,var(--ink) 50%,transparent 50%);border:1.5px solid var(--ink)}
+:root[data-style="mono"] .hlist li.half .mark{color:var(--ink)}
+/* "1 of 4 done · 1 half": two-column heroes put the half count on its own line so the meters keep their width */
+.hf i{font-style:normal}
+:is(.pb-hero,.mo-hero,.cy-hero) .hf{display:block}
+:is(.pb-hero,.mo-hero,.cy-hero) .hf i{display:none}
+/* Timeline dot and Deck pips follow the same half fill */
+.tl-item.is-half .tl-dot{background:linear-gradient(90deg,var(--accent) 50%,var(--surface) 50%)}
+.dk-pips i.half{background:linear-gradient(90deg,var(--ink) 50%,var(--surface) 50%)}
+.dk-pips i.cur.half{background:linear-gradient(90deg,var(--ink) 50%,var(--accent) 50%)}
+.dk-half i{display:inline-block;width:12px;height:12px;margin-right:6px;border:2px solid currentColor;background:linear-gradient(90deg,currentColor 50%,transparent 50%);vertical-align:-1px}
+.dk-half.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* ===== Style recheck fixes (Nov 2026) ===== */
+/* Paper Box Tomorrow: with no 7/10 suggestion beside it, the Balanced plan card takes the full row */
+:root[data-style="paperbox"] .pb-plan>.pb-bal:only-child{flex:1 1 auto!important}
+/* Paper Box empty WOOP list: icon and title on one line, the example under it */
+:root[data-style="paperbox"] .empty.pb-dash{flex-wrap:wrap;gap:4px 8px;padding:12px 14px;text-align:center}
+:root[data-style="paperbox"] .empty.pb-dash>.small{flex-basis:100%}
+/* B&W Focus: a long "Next up" name no longer squeezes the Today pill; the name shortens instead */
+:root[data-style="mono"] .mo-last{display:flex;flex-wrap:wrap;align-items:center}
+:root[data-style="mono"] .mo-last>.sec{margin-left:auto}
+:root[data-style="mono"] .mo-last>.sec[open]{flex-basis:100%}
+:root[data-style="mono"] .mo-next{min-width:0;max-width:100%}
+:root[data-style="mono"] .mo-next b{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* Cyberpunk style picker: long names (Paper Box Simple) wrap instead of running into the next tile */
+:root[data-style="cyberpunk"] .stylepick b{white-space:normal;line-height:1.1;display:block}
